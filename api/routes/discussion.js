@@ -1,3 +1,7 @@
+// discussion.js
+// 
+// Implements the route actions pertaining to managing discussion posts.
+
 'use strict'
 
 // dotenv

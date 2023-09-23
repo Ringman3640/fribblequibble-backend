@@ -1,3 +1,7 @@
+// quibble.js
+// 
+// Implements the route actions pertaining to quibble management and actions.
+
 'use strict'
 
 // dotenv

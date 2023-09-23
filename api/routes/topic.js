@@ -1,3 +1,7 @@
+// topic.js
+// 
+// Implements the route actions pertaining to managing topics.
+
 'use strict'
 
 // utils

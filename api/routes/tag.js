@@ -1,3 +1,7 @@
+// tag.js
+// 
+// Implements the route actions pertaining to managing tags.
+
 'use strict'
 
 // utils

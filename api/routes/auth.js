@@ -1,3 +1,7 @@
+// auth.js
+// 
+// Implements the route actions pertaining to user authentication.
+
 'use strict'
 
 // bcrypt

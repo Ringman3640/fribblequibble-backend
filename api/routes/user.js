@@ -1,3 +1,7 @@
+// user.js
+// 
+// Implements the route actions pertaining to user modifications and actions.
+
 'use strict'
 
 // bcrypt
