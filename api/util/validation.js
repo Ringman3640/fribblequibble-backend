@@ -1,3 +1,7 @@
+// validation.js
+// 
+// Provides helper functions for validating request parameters.
+
 'use strict'
 
 // dotenv
