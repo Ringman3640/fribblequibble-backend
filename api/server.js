@@ -13,9 +13,6 @@ dotenv.config();
 // Express
 const express = require('express');
 const app = express();
-app.listen(process.env.API_PORT, () => {
-    console.log('API server is running.');
-});
 
 // jsonwebtoken
 const jwt = require('jsonwebtoken');
@@ -43,6 +40,9 @@ BigInt.prototype.toJSON = function () {
 }
 
 app.use(cookieParser(), express.json());
+app.listen(process.env.API_PORT, () => {
+    console.log('API server is running.');
+});
 
 // GET / route
 // 
