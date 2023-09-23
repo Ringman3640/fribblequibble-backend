@@ -1,3 +1,9 @@
+// server.js
+// 
+// This file initializes and starts the API server, and it declares all
+// available REST API calls supported by the backend. The implementations for
+// API actions are separated into the routes files. 
+
 'use strict'
 
 // dotenv
@@ -38,6 +44,9 @@ BigInt.prototype.toJSON = function () {
 
 app.use(cookieParser(), express.json());
 
+// GET / route
+// 
+// Gets the default HTML page. Used to test if the database is accessible.
 app.get('/', (req, res) => {
     res.sendFile('./resources/test-page.html', {root: __dirname })
 });
