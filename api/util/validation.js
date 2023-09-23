@@ -88,4 +88,6 @@ exports.validateUserId = (userId) => {
             'INVALID_USER_ID',
             'The provided user ID value must be an int');
     }
+
+    return true;
 }
