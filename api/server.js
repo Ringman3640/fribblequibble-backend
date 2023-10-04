@@ -20,6 +20,9 @@ const jwt = require('jsonwebtoken');
 // cookie-parser
 const cookieParser = require('cookie-parser');
 
+// cors
+const cors = require('cors');
+
 // util
 const RouteError = require('./util/routeerror.js');
 const createAccessToken = require('./util/createaccesstoken.js');
@@ -39,7 +42,7 @@ BigInt.prototype.toJSON = function () {
     return this.toString();
 }
 
-app.use(cookieParser(), express.json());
+app.use(cookieParser(), express.json(), cors({ origin: '*' }));
 app.listen(process.env.API_PORT, () => {
     console.log('API server is running.');
 });
@@ -371,8 +374,8 @@ app.post('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) 
 // 
 // Return JSON structure:
 // {
-//     choice-name:  (string) Name of the choice the user selected
-//     choice-color: (string) Hex color of the choice (#FFFFFF format)
+//     choiceName:  (string) Name of the choice the user selected
+//     choiceColor: (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned
@@ -411,8 +414,8 @@ app.get('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) =
 //     quibbles: [
 //         {
 //             id:          (BigInt string) ID of the quibble,
-//             author-name: (string) Name of the quibble author,
-//             author-id:   (int) ID of the quibble author,
+//             authorName:  (string) Name of the quibble author,
+//             authorId:   (int) ID of the quibble author,
 //             date:        (string) Date the quible was posted,
 //             content:     (string) Text content of the quibble,
 //             condemns:    (int, optional) Count of the number of condemns,

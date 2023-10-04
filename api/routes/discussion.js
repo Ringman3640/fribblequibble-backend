@@ -386,15 +386,15 @@ exports.addUserChoice = new RouteResolver(async (req, res) => {
     }
 });
 
-// GET /discussion/:id/user-choices route
+// GET /discussion/:id/user-choice route
 // 
 // Gets the user's choice from a specific discussion. Includes the choice name
 // and choice color.
 // 
 // Return JSON structure:
 // {
-//     choice-name:  (string) Name of the choice the user selected
-//     choice-color: (string) Hex color of the choice (#FFFFFF format)
+//     choiceName:  (string) Name of the choice the user selected
+//     choiceColor: (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned
@@ -430,8 +430,8 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
             'The user has not selected a choice');
     }
     const resJSON = {};
-    resJSON['choice-name'] = dbRes[0].choice_name;
-    resJSON['choice-color'] = dbRes[0].color;
+    resJSON['choiceName'] = dbRes[0].choice_name;
+    resJSON['choiceColor'] = dbRes[0].color;
 
     res.status(200).send(resJSON);
 });
@@ -456,8 +456,8 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
 //     quibbles: [
 //         {
 //             id:          (BigInt string) ID of the quibble,
-//             author-name: (string) Name of the quibble author,
-//             author-id:   (int) ID of the quibble author,
+//             authorName:  (string) Name of the quibble author,
+//             authorId:   (int) ID of the quibble author,
 //             date:        (string) Date the quible was posted,
 //             content:     (string) Text content of the quibble,
 //             condemns:    (int, optional) Count of the number of condemns,
@@ -542,8 +542,8 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     for (const quibble of dbRes) {
         const nextEntry = { };
         nextEntry['id'] = quibble.id;
-        nextEntry['author-name'] = quibble.username;
-        nextEntry['author-id'] = quibble.author_id;
+        nextEntry['authorName'] = quibble.username;
+        nextEntry['authorId'] = quibble.author_id;
         nextEntry['date'] = quibble.date_posted;
         nextEntry['content'] = quibble.content;
         if (quibble.condemn_count > 0n) {
