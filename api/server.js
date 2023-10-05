@@ -233,17 +233,17 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 // GET /discussion/:id route
 // 
 // Gets information about a specific discussion. Includes the discussion title,
-// date, topic, topic ID, and choices.
+// timestamp, topic, topic ID, and choices.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the discussion
 // 
 // Return JSON structure:
 // {
-//     title:   (string) Title of the discussion,
-//     date:    (string) Date the discussion was posted,
-//     topic:   (string) Name of the discussion topic,
-//     topicId: (int) ID of the topic,
+//     title:       (string) Title of the discussion,
+//     timestamp:   (int) Time the discussion was posted in UNIX time,
+//     topic:       (string) Name of the discussion topic,
+//     topicId:     (int) ID of the topic,
 //     choices: [
 //         {
 //             name:  (string) Name of the choice,
@@ -397,9 +397,9 @@ app.get('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) =
 // GET /discussion/:id/quibbles route
 // 
 // Gets the quibbles from a specific discussion, starting from the newest.
-// Includes the quibble ID, author name, author ID, date, and quibble content.
-// Also potentially includes the comdemn count and if the current user has
-// condemned a specific quibble. Only returns at most 20 quibbles per call.
+// Includes the quibble ID, author name, author ID, timestamp, and quibble
+// content. Also potentially includes the comdemn count and if the current user
+// has condemned a specific quibble. Only returns at most 20 quibbles per call.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the discussion
@@ -415,8 +415,8 @@ app.get('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) =
 //         {
 //             id:          (BigInt string) ID of the quibble,
 //             authorName:  (string) Name of the quibble author,
-//             authorId:   (int) ID of the quibble author,
-//             date:        (string) Date the quible was posted,
+//             authorId:    (int) ID of the quibble author,
+//             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
 //             condemns:    (int, optional) Count of the number of condemns,
 //             condemned:   (bool, true optional) Indicates if the user has

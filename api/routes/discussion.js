@@ -67,17 +67,17 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 // GET /discussion/:id route
 // 
 // Gets information about a specific discussion. Includes the discussion title,
-// date, topic, topic ID, and choices.
+// timestamp, topic, topic ID, and choices.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the discussion
 // 
 // Return JSON structure:
 // {
-//     title:   (string) Title of the discussion,
-//     date:    (string) Date the discussion was posted,
-//     topic:   (string) Name of the discussion topic,
-//     topicId: (int) ID of the topic,
+//     title:       (string) Title of the discussion,
+//     timestamp:   (int) Time the discussion was posted in UNIX time,
+//     topic:       (string) Name of the discussion topic,
+//     topicId:     (int) ID of the topic,
 //     choices: [
 //         {
 //             name:  (string) Name of the choice,
@@ -109,7 +109,8 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
     }
 
     const discussionInfo = await res.locals.conn.query(`
-        SELECT title, date_created, topic_id, topic_name FROM discussion
+        SELECT title, UNIX_TIMESTAMP(date_created) as timestamp, topic_id, topic_name
+        FROM discussion
         JOIN topic ON (discussion.topic_id = topic.id)
         WHERE discussion.id = ?;
     `, [discussionId]);
@@ -126,7 +127,7 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
 
     const resJSON = {};
     resJSON['title'] = discussionInfo[0].title;
-    resJSON['date'] = discussionInfo[0].date_created;
+    resJSON['timestamp'] = discussionInfo[0].timestamp;
     resJSON['topic'] = discussionInfo[0].topic_name;
     resJSON['topicId'] = discussionInfo[0].topic_id;
     resJSON['choices'] = [];
@@ -439,9 +440,9 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
 // GET /discussion/:id/quibbles route
 // 
 // Gets the quibbles from a specific discussion, starting from the newest.
-// Includes the quibble ID, author name, author ID, date, and quibble content.
-// Also potentially includes the comdemn count and if the current user has
-// condemned a specific quibble. Only returns at most 20 quibbles per call.
+// Includes the quibble ID, author name, author ID, timestamp, and quibble
+// content. Also potentially includes the comdemn count and if the current user
+// has condemned a specific quibble. Only returns at most 20 quibbles per call.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the discussion
@@ -457,8 +458,8 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
 //         {
 //             id:          (BigInt string) ID of the quibble,
 //             authorName:  (string) Name of the quibble author,
-//             authorId:   (int) ID of the quibble author,
-//             date:        (string) Date the quible was posted,
+//             authorId:    (int) ID of the quibble author,
+//             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
 //             condemns:    (int, optional) Count of the number of condemns,
 //             condemned:   (bool, true optional) Indicates if the user has
@@ -512,7 +513,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     }
 
     const sqlStatement = `
-        SELECT quibble.id, author_id, username, date_posted, content,
+        SELECT quibble.id, author_id, username, UNIX_TIMESTAMP(date_posted) as timestamp, content,
         ${res.locals.userInfo ? 'GROUP_CONCAT(user_id) AS condemn_list,' : ''}
         COUNT(user_id) AS condemn_count
         FROM quibble
@@ -544,7 +545,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
         nextEntry['id'] = quibble.id;
         nextEntry['authorName'] = quibble.username;
         nextEntry['authorId'] = quibble.author_id;
-        nextEntry['date'] = quibble.date_posted;
+        nextEntry['timestamp'] = quibble.timestamp;
         nextEntry['content'] = quibble.content;
         if (quibble.condemn_count > 0n) {
             nextEntry['condemns'] = Number(quibble.condemn_count);
