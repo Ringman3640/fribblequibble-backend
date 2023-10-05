@@ -42,7 +42,14 @@ BigInt.prototype.toJSON = function () {
     return this.toString();
 }
 
-app.use(cookieParser(), express.json(), cors({ origin: '*' }));
+app.use(
+    cookieParser(),
+    express.json(),
+    cors({
+        origin: process.env.CORS_FRONTEND_URL,
+        credentials: true
+    })
+);
 app.listen(process.env.API_PORT, () => {
     console.log('API server is running.');
 });
