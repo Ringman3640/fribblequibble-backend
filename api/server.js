@@ -170,6 +170,20 @@ app.post('/auth/logout', async (req, res, next) => {
     });
 });
 
+// POST /auth/renew-access-token
+// 
+// Renews a user's access token using their refresh token.
+app.post('/auth/renew-access-token', jwtVerifyStrict, async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: auth.renewAccessToken,
+        routeName: 'POST /auth/renew-access-token',
+        req: req,
+        res: res,
+        next: next,
+        createConn: false
+    });
+});
+
 // POST /auth/login/test route
 // 
 // Tests if a user is successfully logged-in. Returns a 200 HTTP response status

@@ -77,6 +77,17 @@ exports.logout = new RouteResolver((req, res) => {
     res.end();
 });
 
+// POST /auth/renew-access-token
+// 
+// Renews a user's access token using their refresh token.
+exports.renewAccessToken = new RouteResolver((req, res) => {
+    // Access token renewal and rejection is all handled by the jwtVerifyStrict
+    // middleware, so just return success message.
+    res.status(201).send({
+        message: 'Successfully renewed access token'
+    });
+});
+
 // POST /auth/login/test route
 // 
 // Tests if a user is successfully logged-in. Returns a 200 HTTP response status
