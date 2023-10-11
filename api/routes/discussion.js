@@ -299,8 +299,9 @@ exports.getDiscussionTags = new RouteResolver(async (req, res) => {
             'DISCUSSION_NOT_FOUND',
             'The provided discussion ID was not found');
     }
-    const resJSON = {};
-    resJSON['tags'] = [];
+    const resJSON = {
+        tags: []
+    };
     for (const tag of tagInfo) {
         resJSON['tags'].push({
             id: tag.id,
@@ -478,12 +479,11 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
             'USER_HAS_NO_CHOICE',
             'The user has not selected a choice');
     }
-    const resJSON = {};
-    resJSON['choiceId'] = dbRes[0].choice_id;
-    resJSON['choiceName'] = dbRes[0].choice_name;
-    if (dbRes[0].color) {
-        resJSON['choiceColor'] = dbRes[0].color;
-    }
+    const resJSON = {
+        choiceId: dbRes[0].choice_id,
+        choiceName: dbRes[0].choice_name,
+        choiceColor: dbRes[0].color || undefined
+    };
 
     res.status(200).send(resJSON);
 });
@@ -592,12 +592,13 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     const dbRes = await res.locals.conn.query(sqlStatement, sqlArgList);
     const resJSON = { quibbles: [] };
     for (const quibble of dbRes) {
-        const nextEntry = { };
-        nextEntry['id'] = quibble.id;
-        nextEntry['authorName'] = quibble.username;
-        nextEntry['authorId'] = quibble.author_id;
-        nextEntry['timestamp'] = quibble.timestamp;
-        nextEntry['content'] = quibble.content;
+        const nextEntry = {
+            id: quibble.id,
+            authorName: quibble.username,
+            authorId: quibble.author_id,
+            timestamp: quibble.timestamp,
+            content: quibble.content
+        };
         if (quibble.condemn_count > 0n) {
             nextEntry['condemns'] = Number(quibble.condemn_count);
         }
