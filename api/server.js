@@ -240,6 +240,10 @@ app.post('/tag', jwtVerifyStrict, async (req, res, next) => {
 // Expected body parameters:
 //   - title (string): Title of the new discussion
 //   - topic-id (int): ID of the discussion's topic
+// 
+// Optional body parameters:
+//   - description (string): Description of the new discussion
+//   - conditions (string array): Condition items of the new discussion
 app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addDiscussion,
@@ -265,10 +269,13 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 //     timestamp:   (int) Time the discussion was posted in UNIX time,
 //     topic:       (string) Name of the discussion topic,
 //     topicId:     (int) ID of the topic,
+//     ~description (string) Description of the discussion,
+//     ~conditions  (string array) Array of condition strings,
 //     choices: [
 //         {
-//             name:  (string) Name of the choice,
-//             color: (string) Hex color of the choice (#FFFFFF format)
+//             id:      (int): ID of the choice,
+//             name:    (string) Name of the choice,
+//             ~color:  (string) Hex color of the choice (#FFFFFF format)
 //         },
 //         . . .
 //     ]
@@ -350,12 +357,14 @@ app.get('/discussion/:id/tags', async (req, res, next) => {
 // POST /discussion/:id/choice route
 // 
 // Adds a new choice to a discussion. Only accessible by admin-level users.
-// 
+//
 // Expected URL parameters:
-//   - id (int): ID of the target discussion
+//   - id (int): ID of the discussion
 // 
 // Expected body parameters:
 //   - choice-name (string): Name of the choice
+// 
+// Optional body parameters:
 //   - choice-color (string): Hex color of the choice (#FFFFFF format)
 app.post('/discussion/:id/choice', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
@@ -368,16 +377,13 @@ app.post('/discussion/:id/choice', jwtVerifyStrict, async (req, res, next) => {
     });
 });
 
-// POST /discussion/:id/user-choice route
+// POST /discussion/choice/:id/user route
 // 
-// Adds a user's choice to a discussion vote.
+// Adds a user's vote to a choice in a discussion.
 // 
 // Expected URL parameters:
-//   - id (int): ID of the target discussion
-// 
-// Expected body parameters:
-//   - choice-name (string): Name of the choice that was voted
-app.post('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) => {
+//   - id (int): ID of the choice that was voted
+app.post('/discussion/choice/:id/user', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addUserChoice,
         routeName: 'POST /discussion/:id/user-choice',
@@ -390,13 +396,15 @@ app.post('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) 
 
 // GET /discussion/:id/user-choice route
 // 
-// Gets the user's choice from a specific discussion. Includes the choice name
+// Gets the user's choice from a specific discussion. Includes the choice ID,
+// choice name, and optionally a choice color if present.
 // and choice color.
 // 
 // Return JSON structure:
 // {
-//     choiceName:  (string) Name of the choice the user selected
-//     choiceColor: (string) Hex color of the choice (#FFFFFF format)
+//     choiceId:        (int) ID of the choice the user selected
+//     choiceName:      (string) Name of the choice the user selected
+//     ~choiceColor:    (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned
@@ -439,8 +447,8 @@ app.get('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) =
 //             authorId:    (int) ID of the quibble author,
 //             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
-//             condemns:    (int, optional) Count of the number of condemns,
-//             condemned:   (bool, true optional) Indicates if the user has
+//             ~condemns:   (int) Count of the number of condemns,
+//             ~condemned:  (bool, true) Indicates if the user has
 //                              condemned the quibble
 //         },
 //         . . .

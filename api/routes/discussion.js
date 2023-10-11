@@ -19,6 +19,10 @@ const RouteResolver = require('../util/routeresolver.js');
 // Expected body parameters:
 //   - title (string): Title of the new discussion
 //   - topic-id (int): ID of the discussion's topic
+// 
+// Optional body parameters:
+//   - description (string): Description of the new discussion
+//   - conditions (string array): Condition items of the new discussion
 exports.addDiscussion = new RouteResolver(async (req, res) => {
     if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
@@ -29,6 +33,8 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 
     const title = req.body['title'];
     const topicId = req.body['topic-id'];
+    const description = req.body['description'];
+    const conditions = req.body['conditions'];
     if (!title) {
         throw new RouteError(
             400,
@@ -41,11 +47,29 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
             'NO_TOPIC_ID',
             'No topic ID was provided in the body request');
     }
+    if (conditions && !Array.isArray(conditions)) {
+        throw new RouteError(
+            400,
+            'INVALID_CONDITIONS',
+            'The provided conditions value must be an array');
+    }
 
-    await res.locals.conn.query(`
-        INSERT INTO discussion (title, topic_id)
-        VALUES (?, ?);
-    `, [title, topicId]);
+    const sqlStatement = `
+        INSERT INTO discussion (
+            ${description ? 'description,' : ''} 
+            ${conditions ? 'conditions,' : ''} 
+            title, topic_id)
+        VALUES (
+            ${description ? '?,' : ''} 
+            ${conditions ? '?,' : ''} 
+            ?, ?);
+    `;
+    let sqlArgList = [];
+    description && sqlArgList.push(description);
+    conditions && sqlArgList.push(JSON.stringify(conditions));
+    sqlArgList.push(title, topicId);
+
+    await res.locals.conn.query(sqlStatement, sqlArgList);
 
     res.status(201).send({
         message: `Successfully added discussion ${title}`
@@ -78,10 +102,13 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 //     timestamp:   (int) Time the discussion was posted in UNIX time,
 //     topic:       (string) Name of the discussion topic,
 //     topicId:     (int) ID of the topic,
+//     ~description (string) Description of the discussion,
+//     ~conditions  (string array) Array of condition strings,
 //     choices: [
 //         {
-//             name:  (string) Name of the choice,
-//             color: (string) Hex color of the choice (#FFFFFF format)
+//             id:      (int): ID of the choice,
+//             name:    (string) Name of the choice,
+//             ~color:  (string) Hex color of the choice (#FFFFFF format)
 //         },
 //         . . .
 //     ]
@@ -109,32 +136,54 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
     }
 
     const discussionInfo = await res.locals.conn.query(`
-        SELECT title, UNIX_TIMESTAMP(date_created) as timestamp, topic_id, topic_name
+        SELECT 
+            title, 
+            UNIX_TIMESTAMP(date_created) as timestamp, 
+            topic_id, 
+            topic_name, 
+            description, 
+            conditions
         FROM discussion
         JOIN topic ON (discussion.topic_id = topic.id)
         WHERE discussion.id = ?;
     `, [discussionId]);
-    const choiceInfo = await res.locals.conn.query(`
-        SELECT choice_name, color FROM choice
-        WHERE discussion_id = ?;
-    `, [discussionId]);
-    if (discussionInfo.length == 0) {
+    if (discussionInfo.length === 0) {
         throw new RouteError(
             400,
             'DISCUSSION_NOT_FOUND',
             'The provided discussion ID was not found');
     }
+    const choiceInfo = await res.locals.conn.query(`
+        SELECT id, choice_name, color FROM choice
+        WHERE discussion_id = ?;
+    `, [discussionId]);
 
-    const resJSON = {};
-    resJSON['title'] = discussionInfo[0].title;
-    resJSON['timestamp'] = discussionInfo[0].timestamp;
-    resJSON['topic'] = discussionInfo[0].topic_name;
-    resJSON['topicId'] = discussionInfo[0].topic_id;
-    resJSON['choices'] = [];
+    let conditionsArray;
+    if (discussionInfo[0].conditions) {
+        try {
+            conditionsArray = JSON.parse(discussionInfo[0].conditions);
+        } catch (err) {
+            delete resJSON['conditions'];
+            console.error('GET /discussion/:id error');
+            console.error(`Failed to parse conditions string from discussion ${discussionId}`);
+        }
+    }
+
+    const resJSON = {
+        title: discussionInfo[0].title,
+        timestamp: discussionInfo[0].timestamp,
+        topicId: discussionInfo[0].topic_id,
+        topic: discussionInfo[0].topic_name,
+        description: discussionInfo[0].description || undefined,
+        conditions: conditionsArray || undefined,
+        choices: []
+    };
+    
     for (const choice of choiceInfo) {
         resJSON['choices'].push({
+            id: choice.id,
             name: choice.choice_name,
-            color: choice.color
+            color: choice.color || undefined
         });
     }
 
@@ -191,8 +240,8 @@ exports.addDiscussionTag = new RouteResolver(async (req, res) => {
     },
     ER_NO_REFERENCED_ROW_2: {
         status: 400,
-        code: 'DISCUSSION_NOT_FOUND',
-        message: 'The provided discussion ID was not found',
+        code: 'DISCUSSION_TAG_NOT_FOUND',
+        message: 'The provided discussion ID or tag ID was not found'
     }
 });
 
@@ -265,15 +314,17 @@ exports.getDiscussionTags = new RouteResolver(async (req, res) => {
 // POST /discussion/:id/choice route
 // 
 // Adds a new choice to a discussion. Only accessible by admin-level users.
-// 
+//
 // Expected URL parameters:
-//   - id (int): ID of the target discussion
+//   - id (int): ID of the discussion
 // 
 // Expected body parameters:
 //   - choice-name (string): Name of the choice
+// 
+// Optional body parameters:
 //   - choice-color (string): Hex color of the choice (#FFFFFF format)
 exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < process.env.ACCESS_LEVEL_ADMIN) {
+    if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
             403,
             'UNAUTHORIZED_ACCESS',
@@ -285,36 +336,36 @@ exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
     const choiceColor = req.body['choice-color'];
     if (!discussionId) {
         throw new RouteError(
-            400,
-            'NO_DISCUSSION_ID',
-            'No discussion ID was provided in the URL parameters');
+            400,'NO_DISCUSSION_ID',
+            'No discussion ID was provided in the body request');
     }
     if (!choiceName) {
         throw new RouteError(
-            400,
-            'NO_CHOICE_NAME',
-            'No name was provided in the body request');
+            400,'NO_CHOICE_NAME',
+            'No choice name was provided in the body request');
     }
-    if (!choiceColor) {
-        throw new RouteError(
-            400,
-            'NO_CHOICE_COLOR',
-            'No choice color was provided in the body request');
-    }
-    if (choiceColor.length != 7 || choiceColor.charAt(0) != '#') {
+    if (choiceColor && (choiceColor.length != 7 || choiceColor.charAt(0) != '#')) {
         throw new RouteError(
             400,
             'INVALID_CHOICE_COLOR',
             'The choice color must be in the hex format #FFFFFF');
     }
 
-    await res.locals.conn.query(`
-        INSERT INTO choice (discussion_id, choice_name, color)
-        VALUES (?, ?, ?);
-    `, [discussionId, choiceName, choiceColor]);
+    if (choiceColor) {
+        await res.locals.conn.query(`
+            INSERT INTO choice (discussion_id, choice_name, color)
+            VALUES (?, ?, ?);
+        `, [discussionId, choiceName, choiceColor]);
+    }
+    else {
+        await res.locals.conn.query(`
+            INSERT INTO choice (discussion_id, choice_name)
+            VALUES (?, ?);
+        `, [discussionId, choiceName]);
+    }
 
     res.status(201).send({
-        message: 'Successfully added choice to discussion'
+        message: 'Successfully added choice'
     });
 },
 {
@@ -322,80 +373,77 @@ exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
         status: 400,
         code: 'CHOICE_ALREADY_EXISTS',
         message: 'The provided choice already exists for the discussion'
+    },
+    ER_NO_REFERENCED_ROW_2: {
+        status: 400,
+        code: 'DISCUSSION_ID_NOT_FOUND',
+        message: 'The provided discussion ID was not found'
     }
 });
 
-// POST /discussion/:id/user-choice route
+// POST /discussion/choice/:id/user route
 // 
-// Adds a user's choice to a discussion vote.
+// Adds a user's vote to a choice in a discussion.
 // 
 // Expected URL parameters:
-//   - id (int): ID of the target discussion
-// 
-// Expected body parameters:
-//   - choice-name (string): Name of the choice that was voted
+//   - id (int): ID of the choice that was voted
 exports.addUserChoice = new RouteResolver(async (req, res) => {
-    const discussionId = req.params['id'];
-    const choiceName = req.body['choice-name'];
-    if (!discussionId) {
+    const choiceId = req.params['id'];
+    if (!choiceId) {
         throw new RouteError(
             400,
-            'NO_DISCUSSION_ID',
-            'No discussion ID was provided in the URL parameters');
+            'NO_CHOICE_ID',
+            'No name was provided in the URL parameters');
     }
-    if (!Number.isInteger(+discussionId)) {
+    if (!Number.isInteger(+choiceId)) {
         throw new RouteError(
             400,
-            'INVALID_DISCUSSION_ID',
-            'The provided discussion ID value must be an int');
-    }
-    if (!choiceName) {
-        throw new RouteError(
-            400,
-            'NO_CHOICE_NAME',
-            'No name was provided in the body request');
+            'INVALID_CHOICE_ID',
+            'The provided choice ID value must be an int');
     }
 
-    // Check if user has already voted
+    // Get discussion ID from choice ID
     const dbRes = await res.locals.conn.query(`
-        SELECT user_id FROM user_choice
-        WHERE discussion_id = ?
-        AND user_id = ?;
-    `, [discussionId, res.locals.userInfo.id]);
-    if (dbRes.length != 0) {
+        SELECT discussion_id FROM choice
+        WHERE id = ?;
+    `, [choiceId]);
+    if (dbRes.length === 0) {
         throw new RouteError(
             400,
-            'USER_ALREADY_VOTED',
-            `The user has already voted on a choice`);
+            'CHOICE_NOT_FOUND',
+            'The choice ID was not found');
     }
+    const discussionId = dbRes[0].discussion_id;
 
-    // Try to add user choice
+    // Add user choice
     await res.locals.conn.query(`
-        INSERT INTO user_choice (discussion_id, user_id, choice_name)
+        INSERT INTO user_choice (choice_id, user_id, discussion_id)
         VALUES (?, ?, ?);
-    `, [discussionId, res.locals.userInfo.id, choiceName]);
+    `, [choiceId, res.locals.userInfo.id, discussionId]);
 
     res.status(201).send({
         message: 'Successfully added user choice'
     });
 },
 {
-    ER_NO_REFERENCED_ROW_2: {
+    ER_DUP_ENTRY: {
         status: 400,
-        code: 'DISCUSSION_CHOICE_NOT_FOUND',
-        message: 'The discussion ID or choice name was not found'
+        code: 'USER_ALREADY_VOTED',
+        message: 'The user has already voted on the discussion'
     }
 });
 
 // GET /discussion/:id/user-choice route
 // 
-// Gets the user's choice from a specific discussion. Includes the choice name
+// Gets the user's choice from a specific discussion. Includes the choice ID,
+// choice name, and optionally a choice color if present.
 // and choice color.
 // 
 // Return JSON structure:
 // {
-//     choiceName:  (string) Name of the choice the user selected
-//     choiceColor: (string) Hex color of the choice (#FFFFFF format)
+//     choiceId:        (int) ID of the choice the user selected
+//     choiceName:      (string) Name of the choice the user selected
+//     ~choiceColor:    (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned
@@ -419,20 +467,23 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
     }
 
     const dbRes = await res.locals.conn.query(`
-        SELECT user_choice.choice_name, color FROM user_choice
-        JOIN choice USING (choice_name)
+        SELECT choice_id, choice_name, color FROM user_choice
+        JOIN choice ON (choice_id = id)
         WHERE user_choice.discussion_id = ?
         AND user_id = ?;
     `, [discussionId, res.locals.userInfo.id]);
-    if (dbRes.length == 0) {
+    if (dbRes.length === 0) {
         throw new RouteError(
             400,
             'USER_HAS_NO_CHOICE',
             'The user has not selected a choice');
     }
     const resJSON = {};
+    resJSON['choiceId'] = dbRes[0].choice_id;
     resJSON['choiceName'] = dbRes[0].choice_name;
-    resJSON['choiceColor'] = dbRes[0].color;
+    if (dbRes[0].color) {
+        resJSON['choiceColor'] = dbRes[0].color;
+    }
 
     res.status(200).send(resJSON);
 });
@@ -461,8 +512,8 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
 //             authorId:    (int) ID of the quibble author,
 //             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
-//             condemns:    (int, optional) Count of the number of condemns,
-//             condemned:   (bool, true optional) Indicates if the user has
+//             ~condemns:   (int) Count of the number of condemns,
+//             ~condemned:  (bool, true) Indicates if the user has
 //                              condemned the quibble
 //         },
 //         . . .

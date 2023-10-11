@@ -30,7 +30,9 @@ VALUES (1, 'User'), (2, 'Moderator'), (3, 'Admin'), (4, 'Developer');
 
 CREATE TABLE discussion (
 	id INT AUTO_INCREMENT PRIMARY KEY,
-	title VARCHAR(300) NOT NULL,
+	title VARCHAR(100) NOT NULL,
+	description VARCHAR(300),
+    conditions TEXT,
 	date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     topic_id INT NOT NULL,
 
@@ -45,17 +47,19 @@ CREATE TABLE discussion (
 );
 
 CREATE TABLE choice (
+    id INT PRIMARY KEY AUTO_INCREMENT,
     discussion_id INT NOT NULL,
     choice_name VARCHAR(50) NOT NULL,
-    color CHAR(7) NOT NULL,
+    color CHAR(7),
 
-    CONSTRAINT pk_choice PRIMARY KEY (discussion_id, choice_name),
     CONSTRAINT fk_choice_discussion_id FOREIGN KEY (discussion_id)
         REFERENCES discussion(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     
-    INDEX(choice_name)
+    INDEX(discussion_id),
+    INDEX(choice_name),
+    UNIQUE(discussion_id, choice_name)
 );
 
 CREATE TABLE discussion_tag (
@@ -90,23 +94,25 @@ CREATE TABLE `user` (
 );
 
 CREATE TABLE user_choice (
-    discussion_id INT NOT NULL,
+    choice_id INT NOT NULL,
     user_id INT NOT NULL,
-    choice_name VARCHAR(50) NOT NULL,
+    discussion_id INT NOT NULL,
 
-    CONSTRAINT pk_user_choice PRIMARY KEY (discussion_id, user_id),
-    CONSTRAINT fk_user_choice_discussion_id FOREIGN KEY (discussion_id)
-        REFERENCES discussion(id)
+    CONSTRAINT pk_user_choice PRIMARY KEY (choice_id, user_id),
+    CONSTRAINT fk_user_choice_choice_id FOREIGN KEY (choice_id)
+        REFERENCES choice(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     CONSTRAINT fk_user_choice_user_id FOREIGN KEY (user_id)
         REFERENCES user(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    CONSTRAINT fk_user_choice_choice_name FOREIGN KEY (choice_name)
-        REFERENCES choice(choice_name)
+    CONSTRAINT fk_user_choice_discussion_id FOREIGN KEY (discussion_id)
+        REFERENCES discussion(id)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON UPDATE CASCADE,
+
+    UNIQUE(user_id, discussion_id)
 );
 
 CREATE TABLE quibble (
@@ -143,3 +149,20 @@ CREATE TABLE condemning_user (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+/*
+Changes:
+	~ discussion:title VARCHAR(400) -> VARCHAR(100)
+    + discussion:description
+    + discussion:conditions
+    + choice:id
+    + choice:INDEX(discussion_id)
+    - choice:pk_choice
+    - choice:color NOT NULL
+    + user_choice:choice_id
+    - user_choice:choice_name
+    ~ user_choice:pk_user_choice (discussion_id, user_id) -> (choice_id, user_id)
+    + user_choice:fk_user_choice_choice_id
+    - user_choice:fk_user_choice_choice_name
+    + user_choice:UNIQUE
+*/
