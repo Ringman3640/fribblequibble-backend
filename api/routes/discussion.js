@@ -524,6 +524,8 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
 // assume that the quibble has no condemn count. The condemned attribute will
 // only be present if the user has condemned the quibble, and the attribute will
 // always be set to the value true.
+// 
+// The quibbles array is sorted by quibble ID, descending.
 //
 // Quibbles may be deleted by the user or my moderators. Deleted quibbles will
 // have their content attribute set to null.
