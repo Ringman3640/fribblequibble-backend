@@ -489,6 +489,22 @@ app.get('/discussion/:id/quibbles', jwtVerifySoft, async (req, res, next) => {
 // Expected body parameters:
 //   - discussion-id (int): ID of the target discussion
 //   - content (string): Text content of the quibble
+//
+// Returns the formatted JSON quibble with the following structure:
+// {
+//     id:          (BigInt string) ID of the quibble,
+//     authorName:  (string) Name of the quibble author,
+//     authorId:    (int) ID of the quibble author,
+//     timestamp:   (number) Time the quibble was posted in UNIX time,
+//     content:     (string) Text content of the quibble
+// }
+// 
+// If the quibble could not be added, an error code and message is returned with
+// the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
 app.post('/quibble', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: quibble.addQuibble,

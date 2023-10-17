@@ -19,6 +19,22 @@ const RouteResolver = require('../util/routeresolver.js');
 // Expected body parameters:
 //   - discussion-id (int): ID of the target discussion
 //   - content (string): Text content of the quibble
+//
+// Returns the formatted JSON quibble with the following structure:
+// {
+//     id:          (BigInt string) ID of the quibble,
+//     authorName:  (string) Name of the quibble author,
+//     authorId:    (int) ID of the quibble author,
+//     timestamp:   (number) Time the quibble was posted in UNIX time,
+//     content:     (string) Text content of the quibble
+// }
+// 
+// If the quibble could not be added, an error code and message is returned with
+// the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
 exports.addQuibble = new RouteResolver(async (req, res) => {
     const discussionId = req.body['discussion-id'];
     const content = req.body['content'];
@@ -53,13 +69,31 @@ exports.addQuibble = new RouteResolver(async (req, res) => {
             `The length of the content cannot exceed ${process.env.QUIBBLE_MAX_LEN} characters`);
     }
 
+    await res.locals.conn.beginTransaction();
     await res.locals.conn.query(`
         INSERT INTO quibble (discussion_id, author_id, content)
         VALUES (?, ?, ?);
     `, [discussionId, res.locals.userInfo.id, content]);
+    const dbRes = await res.locals.conn.query(`
+        SELECT quibble.id, username, author_id, UNIX_TIMESTAMP(date_posted) as timestamp, content
+        FROM quibble
+        JOIN user ON (author_id = user.id)
+        WHERE quibble.id = LAST_INSERT_ID();
+    `);
+    try {
+        await res.locals.conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    }
 
+    const quibble = dbRes[0];
     res.status(201).send({
-        message: 'Successfully added quibble'
+        id: quibble.id,
+        authorName: quibble.username,
+        authorId: quibble.author_id,
+        timestamp: quibble.timestamp,
+        content: quibble.content
     });
 },
 {
