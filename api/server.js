@@ -423,6 +423,34 @@ app.get('/discussion/:id/user-choice', jwtVerifyStrict, async (req, res, next) =
     });
 });
 
+// GET /discussion/:id/choice-votes route
+// 
+// Gets the vote count for each choice of the target discussion.
+// 
+// Return JSON structure:
+// {
+//     choiceVotes: [
+//         {
+//             choiceId:  (int) ID of the choice
+//             voteCount: (int) Count of how many votes the choice has
+//         },
+//         . . .
+//     ]
+// }
+// 
+// Expected URL parameters:
+//   - id (int): ID of the target discussion
+app.get('/discussion/:id/choice-votes', async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: discussion.getChoiceVotes,
+        routeName: 'GET /discussion/:id/choice-votes',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // GET /discussion/:id/quibbles route
 // 
 // Gets the quibbles from a specific discussion, starting from the newest.

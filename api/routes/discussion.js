@@ -488,6 +488,61 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
     res.status(200).send(resJSON);
 });
 
+// GET /discussion/:id/choice-votes route
+// 
+// Gets the vote count for each choice of the target discussion.
+// 
+// Return JSON structure:
+// {
+//     choiceVotes: [
+//         {
+//             choiceId:  (int) ID of the choice
+//             voteCount: (int) Count of how many votes the choice has
+//         },
+//         . . .
+//     ]
+// }
+// 
+// Expected URL parameters:
+//   - id (int): ID of the target discussion
+exports.getChoiceVotes = new RouteResolver(async(req, res) => {
+    const discussionId = req.params['id'];
+    if (!discussionId) {
+        throw new RouteError(
+            400,
+            'NO_DISCUSSION_ID',
+            'No discussion ID was provided in the URL parameters');
+    }
+    if (!Number.isInteger(+discussionId)) {
+        throw new RouteError(
+            400,
+            'INVALID_DISCUSSION_ID',
+            'The provided discussion ID value must be an int');
+    }
+
+    const dbRes = await res.locals.conn.query(`
+        SELECT id, COUNT(user_id) AS choice_count FROM choice
+        LEFT JOIN user_choice ON (id = choice_id)
+        WHERE choice.discussion_id = ?
+        GROUP BY id;
+    `, [discussionId]);
+
+    const resJSON = {
+        choiceVotes: []
+    };
+    for (const choiceVote of dbRes) {
+        resJSON.choiceVotes.push({
+            choiceId: choiceVote.id,
+            voteCount: Number(choiceVote.choice_count)
+        });
+    }
+
+    res.status(200).send(resJSON);
+},
+{
+
+});
+
 // GET /discussion/:id/quibbles route
 // 
 // Gets the quibbles from a specific discussion, starting from the newest.
