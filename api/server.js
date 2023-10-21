@@ -475,6 +475,7 @@ app.get('/discussion/:id/choice-votes', async (req, res, next) => {
 //             authorId:    (int) ID of the quibble author,
 //             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
+//             ~choiceId:   (int) ID of the user's choice
 //             ~condemns:   (int) Count of the number of condemns,
 //             ~condemned:  (bool, true) Indicates if the user has
 //                              condemned the quibble

@@ -567,6 +567,7 @@ exports.getChoiceVotes = new RouteResolver(async(req, res) => {
 //             authorId:    (int) ID of the quibble author,
 //             timestamp:   (number) Time the quibble was posted in UNIX time,
 //             content:     (string) Text content of the quibble,
+//             ~choiceId:   (int) ID of the user's choice
 //             ~condemns:   (int) Count of the number of condemns,
 //             ~condemned:  (bool, true) Indicates if the user has
 //                              condemned the quibble
@@ -621,13 +622,21 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     }
 
     const sqlStatement = `
-        SELECT quibble.id, author_id, username, UNIX_TIMESTAMP(date_posted) as timestamp, content,
-        ${res.locals.userInfo ? 'GROUP_CONCAT(user_id) AS condemn_list,' : ''}
-        COUNT(user_id) AS condemn_count
+        SELECT 
+            quibble.id,
+            author_id,
+            username,
+            UNIX_TIMESTAMP(date_posted) as timestamp,
+            content, 
+            choice_id,
+            ${res.locals.userInfo ? 'GROUP_CONCAT(condemning_user.user_id) AS condemn_list,' : ''}
+            COUNT(condemning_user.user_id) AS condemn_count
         FROM quibble
         JOIN user ON (author_id = user.id)
         LEFT JOIN condemning_user ON (quibble.id = quibble_id)
-        WHERE discussion_id = ?
+        LEFT JOIN user_choice ON (user.id = user_choice.user_id)
+        WHERE quibble.discussion_id = ?
+        AND (user_choice.discussion_id = ? OR user_choice.discussion_id IS NULL)
         ${afterQuibbleId ? 'AND quibble.id < ?' : ''}
         GROUP BY quibble.id
         ORDER BY quibble.id DESC
@@ -635,6 +644,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     `;
 
     const sqlArgList = [];
+    sqlArgList.push(+discussionId);
     sqlArgList.push(+discussionId);
     if (afterQuibbleId){
         sqlArgList.push(+afterQuibbleId);
@@ -654,7 +664,8 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
             authorName: quibble.username,
             authorId: quibble.author_id,
             timestamp: quibble.timestamp,
-            content: quibble.content
+            content: quibble.content,
+            choiceId: quibble.choice_id || undefined
         };
         if (quibble.condemn_count > 0n) {
             nextEntry['condemns'] = Number(quibble.condemn_count);
