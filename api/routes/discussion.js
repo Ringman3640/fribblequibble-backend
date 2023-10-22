@@ -629,12 +629,20 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
             UNIX_TIMESTAMP(date_posted) as timestamp,
             content, 
             choice_id,
-            ${res.locals.userInfo ? 'GROUP_CONCAT(condemning_user.user_id) AS condemn_list,' : ''}
+            ${res.locals.userInfo ? 'condemned.user_id AS condemned,' : ''}
             COUNT(condemning_user.user_id) AS condemn_count
         FROM quibble
         JOIN user ON (author_id = user.id)
         LEFT JOIN condemning_user ON (quibble.id = quibble_id)
         LEFT JOIN user_choice ON (user.id = user_choice.user_id)
+        ${res.locals.userInfo ? `
+        LEFT JOIN (
+            SELECT
+                quibble_id,
+                user_id
+            FROM condemning_user
+            WHERE user_id = ?
+        ) condemned ON (quibble.id = condemned.quibble_id)` : ''}
         WHERE quibble.discussion_id = ?
         AND (user_choice.discussion_id = ? OR user_choice.discussion_id IS NULL)
         ${afterQuibbleId ? 'AND quibble.id < ?' : ''}
@@ -644,6 +652,9 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     `;
 
     const sqlArgList = [];
+    if (res.locals.userInfo) {
+        sqlArgList.push(res.locals.userInfo.id);
+    }
     sqlArgList.push(+discussionId);
     sqlArgList.push(+discussionId);
     if (afterQuibbleId){
@@ -670,9 +681,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
         if (quibble.condemn_count > 0n) {
             nextEntry['condemns'] = Number(quibble.condemn_count);
         }
-        if (res.locals.userInfo
-            && quibble.condemn_list
-            && quibble.condemn_list.split(',').includes(res.locals.userInfo.id.toString())) {
+        if (quibble.condemned) {
             nextEntry['condemned'] = true;
         }
 
