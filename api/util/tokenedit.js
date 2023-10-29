@@ -1,3 +1,7 @@
+// tokenedit.js
+// 
+// Provides token creation and application utility functions.
+
 'use strict'
 
 // jsonwebtoken
