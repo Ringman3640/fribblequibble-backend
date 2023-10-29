@@ -52,7 +52,7 @@ exports.createAccessToken = async (userId, conn) => {
 exports.setRefreshToken = async (refreshToken, res) => {
     res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        expires: new Date(Date.now() + process.env.COOKIE_EXPIRY_TIME_SECONDS)
+        expires: new Date(Date.now() + +process.env.COOKIE_EXPIRY_TIME_MS)
     });
 }
 
@@ -62,6 +62,6 @@ exports.setRefreshToken = async (refreshToken, res) => {
 // date cookie option.
 exports.setAccessToken = async (accessToken, res) => {
     res.cookie('access_token', accessToken, {
-        expires: new Date(Date.now() + process.env.COOKIE_EXPIRY_TIME_SECONDS)
+        expires: new Date(Date.now() + +process.env.COOKIE_EXPIRY_TIME_MS)
     });
 }
