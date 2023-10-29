@@ -18,7 +18,7 @@ const jwt = require('jsonwebtoken');
 const RouteError = require('../util/routeerror.js')
 const RouteResolver = require('../util/routeresolver.js');
 const validation = require('../util/validation.js');
-const createAccessToken = require('../util/createaccesstoken.js');
+const tokenEdit = require('../util/tokenedit.js');
 
 // POST /auth/login route
 // 
@@ -59,10 +59,10 @@ exports.login = new RouteResolver(async (req, res) => {
         { expiresIn: process.env.JWT_REFRESH_EXPIRE_TIME }
         );
 
-    let accessToken = await createAccessToken(userInfo.id, res.locals.conn);
+    let accessToken = await tokenEdit.createAccessToken(userInfo.id, res.locals.conn);
 
-    res.cookie('refresh_token', refreshToken, { httpOnly: true });
-    res.cookie('access_token', accessToken);
+    tokenEdit.setRefreshToken(refreshToken, res);
+    tokenEdit.setAccessToken(accessToken, res);
     res.status(200).send({
         message: `Successfully logged-in as user ${username}`
     });

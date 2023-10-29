@@ -25,7 +25,7 @@ const cors = require('cors');
 
 // util
 const RouteError = require('./util/routeerror.js');
-const createAccessToken = require('./util/createaccesstoken.js');
+const tokenEdit = require('./util/tokenedit.js');
 const dbPool = require('./util/dbpool.js');
 
 // routes
@@ -675,11 +675,11 @@ async function jwtVerifyStrict(req, res, next) {
     // Try to create access token from refresh token
     try {
         const userId = jwt.verify(req.cookies.refresh_token, process.env.JWT_SECRET).id;
-        const accessToken = await createAccessToken(userId);
+        const accessToken = await tokenEdit.createAccessToken(userId);
         if (!accessToken) {
             throw new Error('User does not exist');
         }
-        res.cookie('access_token', accessToken);
+        tokenEdit.setAccessToken(accessToken, res);
         res.locals.userInfo = jwt.verify(accessToken, process.env.JWT_SECRET);
         next();
         return;
@@ -722,9 +722,9 @@ async function jwtVerifySoft(req, res, next) {
     // Try to create access token from refresh token
     try {
         const userId = jwt.verify(req.cookies.refresh_token, process.env.JWT_SECRET).id;
-        const accessToken = await createAccessToken(userId);
+        const accessToken = await tokenEdit.createAccessToken(userId);
         if (accessToken) {
-            res.cookie('access_token', accessToken);
+            tokenEdit.setAccessToken(accessToken, res);
             res.locals.userInfo = jwt.verify(accessToken, process.env.JWT_SECRET);
         }
     } catch {
