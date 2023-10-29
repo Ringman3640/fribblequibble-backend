@@ -10,8 +10,6 @@ dotenv.config();
 // util
 const dbPool = require('./dbpool.js');
 
-const SECONDS_PER_DAY = 86400;
-
 // createAccessToken
 // 
 // Creates a new access token for a user given the user's ID and a connection
