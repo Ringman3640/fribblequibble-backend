@@ -270,7 +270,6 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 //         retrieval will start from (excluding)
 //   - count (int): Number of discussions to retrieve (capped to 20 discussions)
 //   - sort-by (string): Sort method to retrieve discussions
-//   - tag-list (int array): Array of tag IDs to filter the discussion search
 // 
 // sort-by methods:
 //   - 'date-new': Discussions sorted by initial post date ascending (default)
@@ -278,15 +277,6 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 //   - 'recent': Discussions sorted by recent post activity
 //   - 'votes': Discussions sorted by vote count
 //   - 'quibbles': Discussions sorted by quibble count
-//
-// tag-list structure:
-//     The tag-list is an array of tag ID integers with the following structure:
-//         [tagId1,tagId2,...]
-//     The array is surrounded with brackets and each tag ID is separated with
-//     commas. In JavaScript, this format can be obtained by using
-//     JSON.stringify() on a corresponding array.
-//     Example URI:
-//         /discussions?tag-list=[3,9,5,10]
 // 
 // Return JSON structure: 
 // {
