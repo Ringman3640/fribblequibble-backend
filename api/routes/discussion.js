@@ -129,8 +129,8 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 // The optional lastIndex attribute will only be included if at least one
 // discussion is included in the discussions array attribute.
 exports.getDiscussions = new RouteResolver(async (req, res) => {
-    const afterIndex = req.query['after-index'] || -1;
-    const retrieveCount = req.query['count'] || +process.env.DISCUSSIONS_MAX_GET;
+    const afterIndex = +req.query['after-index'] || -1;
+    const retrieveCount = +req.query['count'] || +process.env.DISCUSSIONS_MAX_GET;
     const sortBy = req.query['sort-by'] || 'date-new';
 
     if (afterIndex && !Number.isInteger(+afterIndex)) {
@@ -139,7 +139,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             'INVALID_AFTER_INDEX',
             'The provided after index value must be an int');
     }
-    if (retrieveCount && (!Number.isInteger(retrieveCount) || retrieveCount < 0)) {
+    if (retrieveCount && (!Number.isInteger(+retrieveCount) || retrieveCount < 0)) {
         throw new RouteError(
             400,
             'INVALID_COUNT',
@@ -222,7 +222,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
         });
     }
     if (dbResLimited.length !== 0) {
-        resJSON['lastIndex'] = endIdx - 1;
+        resJSON['lastIndex'] = startIdx + dbResLimited.length - 1;
     }
 
     res.status(200).send(resJSON);
