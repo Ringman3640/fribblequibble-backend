@@ -99,6 +99,7 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 // order and is used to retrieve discussions past the initial 20 and so on.
 //
 // Optional query parameters:
+//   - topic-id (int): ID of the topic for the retrieved discussions
 //   - after-index (int): Index that specifies a position that discussion
 //         retrieval will start from (excluding)
 //   - count (int): Number of discussions to retrieve (capped to 20 discussions)
@@ -118,6 +119,8 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 //             id:           (int) ID of the discussion,
 //             title:        (string) Title of the discussion,
 //             timestamp:    (int) Time the discussion was posted in UNIX time,
+//             topic:        (string) Name of the discussion's topic
+//             topicId:      (int) ID of the discussion's topic
 //             voteCount:    (int) Count of total user votes,
 //             quibbleCount: (int) Count of total user quibbles
 //         },
@@ -129,17 +132,24 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 // The optional lastIndex attribute will only be included if at least one
 // discussion is included in the discussions array attribute.
 exports.getDiscussions = new RouteResolver(async (req, res) => {
+    const topicId = +req.query['topic-id'];
     const afterIndex = +req.query['after-index'] || -1;
     const retrieveCount = +req.query['count'] || +process.env.DISCUSSIONS_MAX_GET;
     const sortBy = req.query['sort-by'] || 'date-new';
 
-    if (afterIndex && !Number.isInteger(+afterIndex)) {
+    if (topicId && !Number.isInteger(topicId)) {
+        throw new RouteError(
+            400,
+            'INVALID_TOPIC_ID',
+            'The provided topic ID value must be an int');
+    }
+    if (afterIndex && !Number.isInteger(afterIndex)) {
         throw new RouteError(
             400,
             'INVALID_AFTER_INDEX',
             'The provided after index value must be an int');
     }
-    if (retrieveCount && (!Number.isInteger(+retrieveCount) || retrieveCount < 0)) {
+    if (retrieveCount && (!Number.isInteger(retrieveCount) || retrieveCount < 0)) {
         throw new RouteError(
             400,
             'INVALID_COUNT',
@@ -152,13 +162,17 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             COUNT(quibble.id) AS quibble_count
         FROM (
             SELECT
-                id,
+                discussion.id,
                 title,
+                discussion.topic_id,
+                topic_name,
                 UNIX_TIMESTAMP(date_created) as timestamp,
                 COUNT(user_id) AS vote_count
             FROM discussion
-            LEFT JOIN user_choice ON (id = discussion_id)
-            GROUP BY id
+            JOIN topic ON (topic_id = topic.id)
+            LEFT JOIN user_choice ON (discussion.id = discussion_id)
+            ${topicId ? 'WHERE topic_id = ?' : ''}
+            GROUP BY discussion.id
         ) discussion_with_votes
         ${sortBy == 'recent' ? `
         LEFT JOIN (
@@ -199,7 +213,12 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
                 'The provided sort by value is not one of the selectable types');
     }
 
-    const dbRes = await res.locals.conn.query(sqlStatement);
+    const sqlArgList = [];
+    if (topicId) {
+        sqlArgList.push(topicId);
+    }
+
+    const dbRes = await res.locals.conn.query(sqlStatement, sqlArgList);
 
     let boundedRetrieve = retrieveCount;
     if (boundedRetrieve > +process.env.DISCUSSIONS_MAX_GET) {
@@ -216,6 +235,8 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
         resJSON.discussions.push({
             id: discussion.id,
             title: discussion.title,
+            topic: discussion.topic_name,
+            topicId: discussion.topic_id,
             timestamp: discussion.timestamp,
             voteCount: discussion.vote_count,
             quibbleCount: discussion.quibble_count
