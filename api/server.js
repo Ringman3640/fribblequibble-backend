@@ -255,6 +255,67 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
     });
 });
 
+// GET /discussions
+//
+// Gets a list of discussions that include identifying and meta information.
+// The discussion list can be filtered given a set of optional query parameters.
+// Only returns at most 20 discussions per call.
+// 
+// Calls that return discussions will include the index of the last discussion
+// item. The index is the position of a specific discussion in the given sort
+// order and is used to retrieve discussions past the initial 20 and so on.
+//
+// Optional query parameters:
+//   - after-index (int): Index that specifies a position that discussion
+//         retrieval will start from (excluding)
+//   - count (int): Number of discussions to retrieve (capped to 20 discussions)
+//   - sort-by (string): Sort method to retrieve discussions
+//   - tag-list (int array): Array of tag IDs to filter the discussion search
+// 
+// sort-by methods:
+//   - 'date-new': Discussions sorted by initial post date ascending (default)
+//   - 'date-old': Discussions sorted by initial post date descending
+//   - 'recent': Discussions sorted by recent post activity
+//   - 'votes': Discussions sorted by vote count
+//   - 'quibbles': Discussions sorted by quibble count
+//
+// tag-list structure:
+//     The tag-list is an array of tag ID integers with the following structure:
+//         [tagId1,tagId2,...]
+//     The array is surrounded with brackets and each tag ID is separated with
+//     commas. In JavaScript, this format can be obtained by using
+//     JSON.stringify() on a corresponding array.
+//     Example URI:
+//         /discussions?tag-list=[3,9,5,10]
+// 
+// Return JSON structure: 
+// {
+//     discussions: [
+//         {
+//             id:           (int) ID of the discussion,
+//             title:        (string) Title of the discussion,
+//             timestamp:    (int) Time the discussion was posted in UNIX time,
+//             voteCount:    (int) Count of total user votes,
+//             quibbleCount: (int) Count of total user quibbles
+//         },
+//         . . .
+//     ],
+//     ~lastIndex:  (int) Index of the last discussion retrieved in the array
+// }
+// 
+// The optional lastIndex attribute will only be included if at least one
+// discussion is included in the discussions array attribute.
+app.get('/discussions', async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: discussion.getDiscussions,
+        routeName: 'GET /discussions',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // GET /discussion/:id route
 // 
 // Gets information about a specific discussion. Includes the discussion title,

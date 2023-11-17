@@ -88,6 +88,175 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
     }
 });
 
+// GET /discussions
+//
+// Gets a list of discussions that include identifying and meta information.
+// The discussion list can be filtered given a set of optional query parameters.
+// Only returns at most 20 discussions per call.
+// 
+// Calls that return discussions will include the index of the last discussion
+// item. The index is the position of a specific discussion in the given sort
+// order and is used to retrieve discussions past the initial 20 and so on.
+//
+// Optional query parameters:
+//   - after-index (int): Index that specifies a position that discussion
+//         retrieval will start from (excluding)
+//   - count (int): Number of discussions to retrieve (capped to 20 discussions)
+//   - sort-by (string): Sort method to retrieve discussions
+//   - tag-list (int array): Array of tag IDs to filter the discussion search
+// 
+// sort-by methods:
+//   - 'date-new': Discussions sorted by initial post date ascending (default)
+//   - 'date-old': Discussions sorted by initial post date descending
+//   - 'recent': Discussions sorted by recent post activity
+//   - 'votes': Discussions sorted by vote count
+//   - 'quibbles': Discussions sorted by quibble count
+//
+// tag-list structure:
+//     The tag-list is an array of tag ID integers with the following structure:
+//         [tagId1,tagId2,...]
+//     The array is surrounded with brackets and each tag ID is separated with
+//     commas. In JavaScript, this format can be obtained by using
+//     JSON.stringify() on a corresponding array.
+//     Example URI:
+//         /discussions?tag-list=[3,9,5,10]
+// 
+// Return JSON structure: 
+// {
+//     discussions: [
+//         {
+//             id:           (int) ID of the discussion,
+//             title:        (string) Title of the discussion,
+//             timestamp:    (int) Time the discussion was posted in UNIX time,
+//             voteCount:    (int) Count of total user votes,
+//             quibbleCount: (int) Count of total user quibbles
+//         },
+//         . . .
+//     ],
+//     ~lastIndex:  (int) Index of the last discussion retrieved in the array
+// }
+// 
+// The optional lastIndex attribute will only be included if at least one
+// discussion is included in the discussions array attribute.
+exports.getDiscussions = new RouteResolver(async (req, res) => {
+    const afterIndex = req.query['after-index'] || -1;
+    const retrieveCount = req.query['count'] || +process.env.DISCUSSIONS_MAX_GET;
+    const sortBy = req.query['sort-by'] || 'date-new';
+    let tagList = req.query['tag-list'];
+
+    if (afterIndex && !Number.isInteger(+afterIndex)) {
+        throw new RouteError(
+            400,
+            'INVALID_AFTER_INDEX',
+            'The provided after index value must be an int');
+    }
+    if (retrieveCount && (!Number.isInteger(retrieveCount) || retrieveCount < 0)) {
+        throw new RouteError(
+            400,
+            'INVALID_COUNT',
+            'The provided count value must be a positive int');
+    }
+    if (tagList) {
+        try {
+            tagList = JSON.parse(tagList);
+        } catch {
+            throw new RouteError(
+                400,
+                'INVALID_TAG_LIST',
+                'The provided tag list value was not correctly formatted');
+        }
+        for (const tagId of tagList) {
+            if (!Number.isInteger(+tagId)) {
+                throw new RouteError(
+                    400,
+                    'INVALID_TAG_LIST',
+                    'The provided tag list must only contain int values');
+            }
+        }
+    }
+    
+    let sqlStatement = `
+        SELECT
+            discussion_with_votes.*,
+            COUNT(quibble.id) AS quibble_count
+        FROM (
+            SELECT
+                id,
+                title,
+                UNIX_TIMESTAMP(date_created) as timestamp,
+                COUNT(user_id) AS vote_count
+            FROM discussion
+            LEFT JOIN user_choice ON (id = discussion_id)
+            GROUP BY id
+        ) discussion_with_votes
+        ${sortBy == 'recent' ? `
+        LEFT JOIN (
+            SELECT
+                discussion_id,
+                MAX(UNIX_TIMESTAMP(date_posted)) AS timestamp
+            FROM quibble
+            GROUP BY discussion_id
+        ) recent_activity ON (discussion_with_votes.id = recent_activity.discussion_id)
+        ` : ''}
+        LEFT JOIN quibble ON (discussion_with_votes.id = quibble.discussion_id)
+        GROUP BY discussion_with_votes.id
+    `;
+
+    switch(sortBy) {
+        case undefined:
+            sqlStatement += ';';
+            break;
+        case 'date-new':
+            sqlStatement += ' ORDER BY timestamp DESC;';
+            break;
+        case 'date-old':
+            sqlStatement += ' ORDER BY timestamp ASC;';
+            break;
+        case 'recent':
+            sqlStatement += ' ORDER BY recent_activity.timestamp DESC;';
+            break;
+        case 'votes':
+            sqlStatement += ' ORDER BY vote_count DESC;';
+            break;
+        case 'quibbles':
+            sqlStatement += ' ORDER BY quibble_count DESC;';
+            break;
+        default:
+            throw new RouteError(
+                400,
+                'INVALID_SORT_BY',
+                'The provided sort by value is not one of the selectable types');
+    }
+
+    const dbRes = await res.locals.conn.query(sqlStatement);
+
+    let boundedRetrieve = retrieveCount;
+    if (boundedRetrieve > +process.env.DISCUSSIONS_MAX_GET) {
+        boundedRetrieve = +process.env.DISCUSSIONS_MAX_GET;
+    }
+    const startIdx = afterIndex + 1;
+    const endIdx = startIdx + boundedRetrieve;
+    const dbResLimited = dbRes.slice(startIdx, endIdx);
+
+    const resJSON = {
+        discussions: []
+    };
+    for (const discussion of dbResLimited) {
+        resJSON.discussions.push({
+            id: discussion.id,
+            title: discussion.title,
+            timestamp: discussion.timestamp,
+            voteCount: discussion.vote_count,
+            quibbleCount: discussion.quibble_count
+        });
+    }
+    if (dbResLimited.length !== 0) {
+        resJSON['lastIndex'] = endIdx - 1;
+    }
+
+    res.status(200).send(resJSON);
+});
+
 // GET /discussion/:id route
 // 
 // Gets information about a specific discussion. Includes the discussion title,
@@ -293,12 +462,6 @@ exports.getDiscussionTags = new RouteResolver(async (req, res) => {
             WHERE discussion_id = ?
         );
     `, [discussionId]);
-    if (tagInfo.length == 0) {
-        throw new RouteError(
-            400,
-            'DISCUSSION_NOT_FOUND',
-            'The provided discussion ID was not found');
-    }
     const resJSON = {
         tags: []
     };
@@ -634,7 +797,13 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
         FROM quibble
         JOIN user ON (author_id = user.id)
         LEFT JOIN condemning_user ON (quibble.id = quibble_id)
-        LEFT JOIN user_choice ON (user.id = user_choice.user_id)
+        LEFT JOIN (
+            SELECT
+                choice_id,
+                user_id
+            FROM user_choice
+            WHERE discussion_id = ?
+        ) user_vote ON (user.id = user_vote.user_id)
         ${res.locals.userInfo ? `
         LEFT JOIN (
             SELECT
@@ -644,7 +813,6 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
             WHERE user_id = ?
         ) condemned ON (quibble.id = condemned.quibble_id)` : ''}
         WHERE quibble.discussion_id = ?
-        AND (user_choice.discussion_id = ? OR user_choice.discussion_id IS NULL)
         ${afterQuibbleId ? 'AND quibble.id < ?' : ''}
         GROUP BY quibble.id
         ORDER BY quibble.id DESC
@@ -652,10 +820,10 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     `;
 
     const sqlArgList = [];
+    sqlArgList.push(+discussionId);
     if (res.locals.userInfo) {
         sqlArgList.push(res.locals.userInfo.id);
     }
-    sqlArgList.push(+discussionId);
     sqlArgList.push(+discussionId);
     if (afterQuibbleId){
         sqlArgList.push(+afterQuibbleId);
