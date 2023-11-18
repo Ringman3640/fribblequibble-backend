@@ -109,7 +109,7 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 // sort-by methods:
 //   - 'date-new': Discussions sorted by initial post date ascending (default)
 //   - 'date-old': Discussions sorted by initial post date descending
-//   - 'recent': Discussions sorted by recent post activity
+//   - 'activity': Discussions sorted by recent post activity
 //   - 'votes': Discussions sorted by vote count
 //   - 'quibbles': Discussions sorted by quibble count
 // 
@@ -169,7 +169,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
         case 'date-old':
             sqlOrderByStatement = ' ORDER BY timestamp ASC';
             break;
-        case 'recent':
+        case 'activity':
             sqlOrderByStatement = ' ORDER BY activity_timestamp DESC';
             break;
         case 'votes':
