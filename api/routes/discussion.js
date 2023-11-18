@@ -137,7 +137,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
     const search = req.query['search'];
     const topicId = +req.query['topic-id'];
     const afterIndex = +req.query['after-index'] || -1;
-    const retrieveCount = +req.query['count'] || +process.env.DISCUSSIONS_MAX_GET;
+    const retrieveCount = +req.query['count'];
     const sortBy = req.query['sort-by'] || 'date-new';
 
     if (topicId && !Number.isInteger(topicId)) {
@@ -158,6 +158,31 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             'INVALID_COUNT',
             'The provided count value must be a positive int');
     }
+
+    let sqlOrderByStatement;
+    switch(sortBy) {
+        case undefined:
+        case 'date-new':
+            sqlOrderByStatement = ' ORDER BY timestamp DESC';
+            break;
+        case 'date-old':
+            sqlOrderByStatement = ' ORDER BY timestamp ASC';
+            break;
+        case 'recent':
+            sqlOrderByStatement = ' ORDER BY activity_timestamp DESC';
+            break;
+        case 'votes':
+            sqlOrderByStatement = ' ORDER BY vote_count DESC';
+            break;
+        case 'quibbles':
+            sqlOrderByStatement = ' ORDER BY quibble_count DESC';
+            break;
+        default:
+            throw new RouteError(
+                400,
+                'INVALID_SORT_BY',
+                'The provided sort by value is not one of the selectable types');
+    }
     
     let sqlStatement = `
         SELECT
@@ -171,53 +196,30 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
                 discussion.topic_id,
                 topic_name,
                 UNIX_TIMESTAMP(date_created) as timestamp,
-                COUNT(user_id) AS vote_count
+                activity_timestamp,
+                COUNT(user_id) AS vote_count,
+                ROW_NUMBER() OVER (${sqlOrderByStatement}) AS row_index
             FROM discussion
             JOIN topic ON (topic_id = topic.id)
             LEFT JOIN user_choice ON (discussion.id = discussion_id)
+            LEFT JOIN (
+                SELECT
+                    discussion_id,
+                    MAX(UNIX_TIMESTAMP(date_posted)) AS activity_timestamp
+                FROM quibble
+                GROUP BY discussion_id
+            ) activity ON (discussion.id = activity.discussion_id)
             ${topicId ? 'WHERE topic_id = ?' : ''}
             ${search && !topicId ? 'WHERE title LIKE ?' : ''}
             ${search && topicId ? 'AND title LIKE ?' : ''}
             GROUP BY discussion.id
         ) discussion_with_votes
-        ${sortBy == 'recent' ? `
-        LEFT JOIN (
-            SELECT
-                discussion_id,
-                MAX(UNIX_TIMESTAMP(date_posted)) AS timestamp
-            FROM quibble
-            GROUP BY discussion_id
-        ) recent_activity ON (discussion_with_votes.id = recent_activity.discussion_id)
-        ` : ''}
         LEFT JOIN quibble ON (discussion_with_votes.id = quibble.discussion_id)
+        WHERE row_index > ?
         GROUP BY discussion_with_votes.id
+        ${sqlOrderByStatement}
+        LIMIT ?;
     `;
-
-    switch(sortBy) {
-        case undefined:
-            sqlStatement += ';';
-            break;
-        case 'date-new':
-            sqlStatement += ' ORDER BY timestamp DESC;';
-            break;
-        case 'date-old':
-            sqlStatement += ' ORDER BY timestamp ASC;';
-            break;
-        case 'recent':
-            sqlStatement += ' ORDER BY recent_activity.timestamp DESC;';
-            break;
-        case 'votes':
-            sqlStatement += ' ORDER BY vote_count DESC;';
-            break;
-        case 'quibbles':
-            sqlStatement += ' ORDER BY quibble_count DESC;';
-            break;
-        default:
-            throw new RouteError(
-                400,
-                'INVALID_SORT_BY',
-                'The provided sort by value is not one of the selectable types');
-    }
 
     const sqlArgList = [];
     if (topicId) {
@@ -226,21 +228,20 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
     if (search) {
         sqlArgList.push('%' + search + '%');
     }
+    sqlArgList.push(afterIndex ? afterIndex : 0);
+    if (retrieveCount && retrieveCount <= +process.env.DISCUSSIONS_MAX_GET) {
+        sqlArgList.push(retrieveCount);
+    }
+    else {
+        sqlArgList.push(+process.env.DISCUSSIONS_MAX_GET);
+    }
 
     const dbRes = await res.locals.conn.query(sqlStatement, sqlArgList);
-
-    let boundedRetrieve = retrieveCount;
-    if (boundedRetrieve > +process.env.DISCUSSIONS_MAX_GET) {
-        boundedRetrieve = +process.env.DISCUSSIONS_MAX_GET;
-    }
-    const startIdx = afterIndex + 1;
-    const endIdx = startIdx + boundedRetrieve;
-    const dbResLimited = dbRes.slice(startIdx, endIdx);
 
     const resJSON = {
         discussions: []
     };
-    for (const discussion of dbResLimited) {
+    for (const discussion of dbRes) {
         resJSON.discussions.push({
             id: discussion.id,
             title: discussion.title,
@@ -252,8 +253,8 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             description: discussion.description || undefined
         });
     }
-    if (dbResLimited.length !== 0) {
-        resJSON['lastIndex'] = startIdx + dbResLimited.length - 1;
+    if (dbRes.length !== 0) {
+        resJSON['lastIndex'] = dbRes[dbRes.length - 1].row_index;
     }
 
     res.status(200).send(resJSON);
