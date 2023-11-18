@@ -120,8 +120,9 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 //             id:           (int) ID of the discussion,
 //             title:        (string) Title of the discussion,
 //             timestamp:    (int) Time the discussion was posted in UNIX time,
-//             topic:        (string) Name of the discussion's topic
-//             topicId:      (int) ID of the discussion's topic
+//             lastActivity: (int) Time of the last user activity in UNIX time,
+//             topic:        (string) Name of the discussion's topic,
+//             topicId:      (int) ID of the discussion's topic,
 //             voteCount:    (int) Count of total user votes,
 //             quibbleCount: (int) Count of total user quibbles,
 //             ~description: (stirng) Description of the discussion
@@ -248,6 +249,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             topic: discussion.topic_name,
             topicId: discussion.topic_id,
             timestamp: discussion.timestamp,
+            lastActivity: discussion.activity_timestamp || discussion.timestamp,
             voteCount: discussion.vote_count,
             quibbleCount: discussion.quibble_count,
             description: discussion.description || undefined
