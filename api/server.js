@@ -276,7 +276,7 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 // sort-by methods:
 //   - 'date-new': Discussions sorted by initial post date ascending (default)
 //   - 'date-old': Discussions sorted by initial post date descending
-//   - 'recent': Discussions sorted by recent post activity
+//   - 'activity': Discussions sorted by recent post activity
 //   - 'votes': Discussions sorted by vote count
 //   - 'quibbles': Discussions sorted by quibble count
 // 
