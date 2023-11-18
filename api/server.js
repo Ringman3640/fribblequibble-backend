@@ -266,6 +266,7 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 // order and is used to retrieve discussions past the initial 20 and so on.
 //
 // Optional query parameters:
+//   - search (string): Search term to match with retrieved discussion titles
 //   - topic-id (int): ID of the topic for the retrieved discussions
 //   - after-index (int): Index that specifies a position that discussion
 //         retrieval will start from (excluding)
