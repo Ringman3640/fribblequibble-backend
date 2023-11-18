@@ -287,8 +287,11 @@ app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
 //             id:           (int) ID of the discussion,
 //             title:        (string) Title of the discussion,
 //             timestamp:    (int) Time the discussion was posted in UNIX time,
+//             topic:        (string) Name of the discussion's topic
+//             topicId:      (int) ID of the discussion's topic
 //             voteCount:    (int) Count of total user votes,
-//             quibbleCount: (int) Count of total user quibbles
+//             quibbleCount: (int) Count of total user quibbles,
+//             ~description: (stirng) Description of the discussion
 //         },
 //         . . .
 //     ],

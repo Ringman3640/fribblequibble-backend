@@ -123,7 +123,8 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
 //             topic:        (string) Name of the discussion's topic
 //             topicId:      (int) ID of the discussion's topic
 //             voteCount:    (int) Count of total user votes,
-//             quibbleCount: (int) Count of total user quibbles
+//             quibbleCount: (int) Count of total user quibbles,
+//             ~description: (stirng) Description of the discussion
 //         },
 //         . . .
 //     ],
@@ -166,6 +167,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             SELECT
                 discussion.id,
                 title,
+                description,
                 discussion.topic_id,
                 topic_name,
                 UNIX_TIMESTAMP(date_created) as timestamp,
@@ -246,7 +248,8 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
             topicId: discussion.topic_id,
             timestamp: discussion.timestamp,
             voteCount: discussion.vote_count,
-            quibbleCount: discussion.quibble_count
+            quibbleCount: discussion.quibble_count,
+            description: discussion.description || undefined
         });
     }
     if (dbResLimited.length !== 0) {
