@@ -46,3 +46,54 @@ exports.addTopic = new RouteResolver(async (req, res) => {
         message: 'The provided topic name already exists'
     }
 });
+
+// GET /topic/:id route
+// 
+// Gets the name of a specific topic given its ID.
+// 
+// Expected URL parameters:
+//   - id (number): ID of the topic
+// 
+// Return JSON structure:
+// {
+//     topicName: (string) Name of the given topic ID
+// }
+// 
+// If no topic with the specified ID is found, an error code and message is
+// returned with the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
+exports.getTopic = new RouteResolver(async (req, res) => {
+    const topicId = req.params['id'];
+    if (!topicId) {
+        throw new RouteError(
+            400,
+            'NO_TOPIC_ID',
+            'No topic ID was provided in the URL parameters');
+    }
+    if (!Number.isInteger(+topicId)) {
+        throw new RouteError(
+            400,
+            'INVALID_TOPIC_ID',
+            'The provided topic ID value must be an int');
+    }
+
+    const dbRes = await res.locals.conn.query(`
+        SELECT
+            topic_name
+        FROM topic
+        WHERE id = ?;
+    `, [topicId]);
+    if (dbRes.length === 0) {
+        throw new RouteError(
+            404,
+            'TOPIC_ID_NOT_FOUND',
+            'The provided topic ID was not found');
+    }
+
+    res.status(200).send({
+        topicName: dbRes[0].topic_name
+    });
+});

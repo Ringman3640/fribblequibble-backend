@@ -216,6 +216,35 @@ app.post('/topic', jwtVerifyStrict, async (req, res, next) => {
     });
 });
 
+// GET /topic/:id route
+// 
+// Gets the name of a specific topic given its ID.
+// 
+// Expected URL parameters:
+//   - id (number): ID of the topic
+// 
+// Return JSON structure:
+// {
+//     topicName: (string) Name of the given topic ID
+// }
+// 
+// If no topic with the specified ID is found, an error code and message is
+// returned with the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
+app.get('/topic/:id', async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: topic.getTopic,
+        routeName: 'POST /topic',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // POST /tag route
 // 
 // Adds a new tag. Only accessible by admin-level users.
