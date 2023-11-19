@@ -164,19 +164,19 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
     switch(sortBy) {
         case undefined:
         case 'date-new':
-            sqlOrderByStatement = ' ORDER BY timestamp DESC';
+            sqlOrderByStatement = 'ORDER BY timestamp DESC';
             break;
         case 'date-old':
-            sqlOrderByStatement = ' ORDER BY timestamp ASC';
+            sqlOrderByStatement = 'ORDER BY timestamp ASC';
             break;
         case 'activity':
-            sqlOrderByStatement = ' ORDER BY activity_timestamp DESC';
+            sqlOrderByStatement = 'ORDER BY activity_timestamp DESC';
             break;
         case 'votes':
-            sqlOrderByStatement = ' ORDER BY vote_count DESC';
+            sqlOrderByStatement = 'ORDER BY vote_count DESC';
             break;
         case 'quibbles':
-            sqlOrderByStatement = ' ORDER BY quibble_count DESC';
+            sqlOrderByStatement = 'ORDER BY quibble_count DESC';
             break;
         default:
             throw new RouteError(
@@ -187,8 +187,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
     
     let sqlStatement = `
         SELECT
-            discussion_with_votes.*,
-            COUNT(quibble.id) AS quibble_count
+            discussion_with_votes.*
         FROM (
             SELECT
                 discussion.id,
@@ -199,6 +198,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
                 UNIX_TIMESTAMP(date_created) as timestamp,
                 activity_timestamp,
                 COUNT(user_id) AS vote_count,
+                quibble_count,
                 ROW_NUMBER() OVER (${sqlOrderByStatement}) AS row_index
             FROM discussion
             JOIN topic ON (topic_id = topic.id)
@@ -210,12 +210,19 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
                 FROM quibble
                 GROUP BY discussion_id
             ) activity ON (discussion.id = activity.discussion_id)
+            LEFT JOIN (
+                SELECT
+                    discussion.id,
+                    COUNT(quibble.id) AS quibble_count
+                FROM discussion
+                LEFT JOIN quibble ON (discussion.id = discussion_id)
+                GROUP BY discussion.id
+            ) discussions_with_quibbles ON (discussion.id = discussions_with_quibbles.id)
             ${topicId ? 'WHERE topic_id = ?' : ''}
             ${search && !topicId ? 'WHERE title LIKE ?' : ''}
             ${search && topicId ? 'AND title LIKE ?' : ''}
             GROUP BY discussion.id
         ) discussion_with_votes
-        LEFT JOIN quibble ON (discussion_with_votes.id = quibble.discussion_id)
         WHERE row_index > ?
         GROUP BY discussion_with_votes.id
         ${sqlOrderByStatement}
