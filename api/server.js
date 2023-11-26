@@ -138,6 +138,40 @@ app.put('/user/:id/access-level', jwtVerifyStrict, async (req, res, next) => {
     });
 });
 
+// GET /user/:id/statistics
+// 
+// Gets the statistics information about a specific user given their user ID.
+// 
+// Expected URL parameters:
+//   - id (int): ID of the user to update
+// 
+// Return JSON structure:
+// {
+//     username:            (string) Username of the user
+//     joinTimestamp:       (number) Time the user joined in UNIX seconds
+//     totalVotes:          (number) Number of votes the user has submitted
+//     totalQuibbles:       (number) Number of quibbles the user has posted
+//     sendCondemns:        (number) Number of condemns the user has sent
+//     receivedCondemns:    (number) Number of condemns the user has received
+// }
+// 
+// If no user with the specified ID is found, an error code and message is
+// returned with the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
+app.get('/user/:id/statistics', async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: user.getStatistics,
+        routeName: 'POST /user/:id/statistics',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // POST /auth/login route
 // 
 // Logs-in a user to an account.

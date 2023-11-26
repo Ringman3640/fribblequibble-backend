@@ -209,3 +209,87 @@ exports.changeAccessLevel = new RouteResolver(async (req, res) => {
         message: 'Successfully updated access level'
     });
 });
+
+// GET /user/:id/statistics
+// 
+// Gets the statistics information about a specific user given their user ID.
+// 
+// Expected URL parameters:
+//   - id (int): ID of the user to update
+// 
+// Return JSON structure:
+// {
+//     username:            (string) Username of the user
+//     joinTimestamp:       (number) Time the user joined in UNIX seconds
+//     totalVotes:          (number) Number of votes the user has submitted
+//     totalQuibbles:       (number) Number of quibbles the user has posted
+//     sentCondemns:        (number) Number of condemns the user has sent
+//     receivedCondemns:    (number) Number of condemns the user has received
+// }
+// 
+// If no user with the specified ID is found, an error code and message is
+// returned with the following structure:
+// {
+//     error:   (string) Error code
+//     message: (string) Descriptive error message
+// }
+exports.getStatistics = new RouteResolver(async (req, res) => {
+    const userId = req.params['id'];
+    validation.validateUserId(userId);
+
+    const dbRes = await res.locals.conn.query(`
+        SELECT
+            username,
+            UNIX_TIMESTAMP(date_joined) as join_timestamp,
+            total_votes,
+            total_quibbles,
+            sent_condemns,
+            received_condemns
+        FROM user
+        LEFT JOIN (
+            SELECT
+                user_id,
+                COUNT(*) AS total_votes
+            FROM user_choice
+            WHERE user_id = ?
+        ) votes ON (user.id = votes.user_id)
+        LEFT JOIN (
+            SELECT
+                author_id,
+                COUNT(*) AS total_quibbles
+            FROM quibble
+            WHERE author_id = ?
+        ) quibbles ON (user.id = quibbles.author_id)
+        LEFT JOIN (
+            SELECT
+                user_id,
+                COUNT(*) AS sent_condemns
+            FROM condemning_user
+            WHERE user_id = ?
+        ) sent ON (user.id = sent.user_id)
+        LEFT JOIN (
+            SELECT
+                author_id,
+                COUNT(*) AS received_condemns
+            FROM quibble
+            JOIN condemning_user ON (id = quibble_id)
+            WHERE author_id = ?
+        ) received ON (user.id = received.author_id)
+        WHERE user.id = ?;
+    `, [userId, userId, userId, userId, userId]);
+    if (dbRes.length === 0) {
+        throw new RouteError(
+            400,
+            'USER_ID_NOT_FOUND',
+            `User with ID ${userId} not found`);
+    }
+
+    res.status(200).send({
+        username: dbRes[0].username,
+        joinTimestamp: Number(dbRes[0].join_timestamp),
+        totalVotes: Number(dbRes[0].total_votes),
+        totalQuibbles: Number(dbRes[0].total_quibbles),
+        sentCondemns: Number(dbRes[0].sent_condemns),
+        receivedCondemns: Number(dbRes[0].received_condemns)
+    });
+});
