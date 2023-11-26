@@ -293,3 +293,55 @@ exports.getStatistics = new RouteResolver(async (req, res) => {
         receivedCondemns: Number(dbRes[0].received_condemns)
     });
 });
+
+// GET /user/:id/top-discussions
+// 
+// Gets the top 5 discussions that the specified user is most active on
+// according to quibble count. 
+// 
+// Expected URL parameters:
+//   - id (int): ID of the user to update
+// 
+// Return JSON structure:
+// {
+//     discussions: [
+//         {
+//             id:              (int) ID of the discussion,
+//             title:           (string) Title of the discussion,
+//             userQuibbles:    (int) Number of quibbles the user has posted
+//         }
+//         . . . (min 0, max 5)
+//     ]
+// }
+// 
+// The returned discussions array main contain 0 to 5 entries, depending on the
+// number of discussions the user has interacted with.
+exports.getTopDiscussions = new RouteResolver(async (req, res) => {
+    const userId = req.params['id'];
+    validation.validateUserId(userId);
+
+    const dbRes = await res.locals.conn.query(`
+        SELECT
+            discussion.id,
+            title,
+            COUNT(*) AS user_quibble_count
+        FROM discussion
+        JOIN quibble ON (discussion.id = discussion_id)
+        WHERE author_id = ?
+        GROUP BY discussion.id
+        ORDER BY user_quibble_count DESC
+        LIMIT 5;
+    `, [userId]);
+
+    const resJSON = {
+        discussions: []
+    }
+    for (const discussion of dbRes) {
+        resJSON.discussions.push({
+            id: discussion.id,
+            title: discussion.title,
+            userQuibbles: discussion.user_quibble_count
+        });
+    }
+    res.status(200).send(resJSON);
+});
