@@ -151,7 +151,7 @@ app.put('/user/:id/access-level', jwtVerifyStrict, async (req, res, next) => {
 //     joinTimestamp:       (number) Time the user joined in UNIX seconds
 //     totalVotes:          (number) Number of votes the user has submitted
 //     totalQuibbles:       (number) Number of quibbles the user has posted
-//     sendCondemns:        (number) Number of condemns the user has sent
+//     sentCondemns:        (number) Number of condemns the user has sent
 //     receivedCondemns:    (number) Number of condemns the user has received
 // }
 // 
