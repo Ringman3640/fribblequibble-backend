@@ -82,6 +82,7 @@ CREATE TABLE `user` (
     username VARCHAR(30) NOT NULL,
     password_hash BINARY(60) NOT NULL,
     access_level INT NOT NULL DEFAULT 1,
+    date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_user_access_level FOREIGN KEY (access_level)
         REFERENCES access(access_level)
@@ -89,8 +90,7 @@ CREATE TABLE `user` (
         ON UPDATE CASCADE,
     
     INDEX(username),
-    INDEX(access_level),
-    UNIQUE(username)
+    INDEX(access_level)
 );
 
 CREATE TABLE user_choice (
@@ -159,6 +159,7 @@ Changes:
     + choice:INDEX(discussion_id)
     - choice:pk_choice
     - choice:color NOT NULL
+    + user:date_joined
     + user_choice:choice_id
     - user_choice:choice_name
     ~ user_choice:pk_user_choice (discussion_id, user_id) -> (choice_id, user_id)
