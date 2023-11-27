@@ -345,3 +345,122 @@ exports.getTopDiscussions = new RouteResolver(async (req, res) => {
     }
     res.status(200).send(resJSON);
 });
+
+// GET /user/:id/quibbles route
+// 
+// Gets the quibbles from a specific user, ordered by most recent. Includes the
+// quibble ID, discussion title, discussion ID, timestamp, quibble content, and
+// condemns status. Also potentially includes the comdemn count and if the
+// current user has condemned a specific quibble. Only returns at most 20
+// quibbles per call.
+// 
+// Expected URL parameters:
+//   - id (int): ID of the user
+// 
+// Optional query parameters:
+//   - after-quibble-id (int): ID of a specific quibble in which retrieved
+//         quibbles will be after it
+//   - count (int): Number of quibbles to retrieve (capped to 20 quibbles)
+// 
+// Return JSON structure:
+// {
+//     quibbles: [
+//         {
+//             id:           (BigInt string) ID of the quibble,
+//             discussion:   (string) Title of the quibble's discussion,
+//             discussionId: (int) ID of the quibble's discussion,
+//             timestamp:    (number) Time the quibble was posted in UNIX time,
+//             content:      (string | null) Text content of the quibble,
+//             ~condemns:    (int) Count of the number of condemns,
+//             ~condemned:   (bool, true) Indicates if the user has
+//                               condemned the quibble
+//         },
+//         . . . (min 0, max 20)
+//     ]
+// }
+// The condemns and condemned attributes are optional, meaning they may or may
+// not be provided for a quibble. If the condemns attribute is not provided,
+// assume that the quibble has no condemn count. The condemned attribute will
+// only be present if the user has condemned the quibble, and the attribute will
+// always be set to the value true.
+// 
+// The quibbles array is sorted by quibble ID, descending.
+//
+// Quibbles may be deleted by the user or by moderators. Deleted quibbles will
+// have their content attribute set to null.
+exports.getQuibbles = new RouteResolver(async (req, res) => {
+    const userId = req.params['id'];
+    const afterQuibbleId = req.query['after-quibble-id'];
+    const retrieveCount = req.query['count'];
+    validation.validateUserId(userId);
+    if (afterQuibbleId && !Number.isInteger(+afterQuibbleId)) {
+        throw new RouteError(
+            400,
+            'INVALID_AFTER_QUIBBLE_ID',
+            'The provided after quibble ID value must be an int');
+    }
+    if (retrieveCount && (!Number.isInteger(+retrieveCount) || retrieveCount < 0)) {
+        throw new RouteError(
+            400,
+            'INVALID_COUNT',
+            'The provided count value must be a positive int');
+    }
+
+    const sqlStatement = `
+        SELECT 
+            quibble.id,
+            discussion.title AS discussion_title,
+            discussion.id AS discussion_id,
+            UNIX_TIMESTAMP(date_posted) AS timestamp,
+            content, 
+            ${res.locals.userInfo ? 'condemned.user_id AS condemned,' : ''}
+            COUNT(condemning_user.user_id) AS condemn_count
+        FROM quibble
+        JOIN discussion ON (discussion_id = discussion.id)
+        LEFT JOIN condemning_user ON (quibble.id = quibble_id)
+        ${res.locals.userInfo ? `
+        LEFT JOIN (
+            SELECT
+                quibble_id,
+                user_id
+            FROM condemning_user
+            WHERE user_id = ?
+        ) condemned ON (quibble.id = condemned.quibble_id)` : ''}
+        WHERE quibble.author_id = ?
+        ${afterQuibbleId ? 'AND quibble.id < ?' : ''}
+        GROUP BY quibble.id
+        ORDER BY quibble.id DESC
+        LIMIT ?;
+    `;
+
+    const sqlArgList = [];
+    if (res.locals.userInfo) {
+        sqlArgList.push(res.locals.userInfo.id);
+    }
+    sqlArgList.push(+userId);
+    if (afterQuibbleId){
+        sqlArgList.push(+afterQuibbleId);
+    }
+    if (!retrieveCount || +retrieveCount > process.env.QUIBBLE_MAX_GET) {
+        sqlArgList.push(+process.env.QUIBBLE_MAX_GET);
+    }
+    else {
+        sqlArgList.push(+retrieveCount);
+    }
+
+    const dbRes = await res.locals.conn.query(sqlStatement, sqlArgList);
+    const resJSON = { quibbles: [] };
+    for (const quibble of dbRes) {
+        resJSON.quibbles.push({
+            id: quibble.id,
+            discussion: quibble.discussion_title,
+            discussionId: quibble.discussion_id,
+            timestamp: quibble.timestamp,
+            content: quibble.content,
+            condemn_count: (quibble.condemn_count > 0n) ? Number(quibble.condemn_count) : undefined,
+            condemned: quibble.condemned || undefined
+        });
+    }
+
+    res.status(200).send(resJSON);
+});

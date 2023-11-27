@@ -205,6 +205,59 @@ app.get('/user/:id/top-discussions', async (req, res, next) => {
     });
 });
 
+// GET /user/:id/quibbles route
+// 
+// Gets the quibbles from a specific user, ordered by most recent. Includes the
+// quibble ID, discussion title, discussion ID, timestamp, quibble content, and
+// condemns status. Also potentially includes the comdemn count and if the
+// current user has condemned a specific quibble. Only returns at most 20
+// quibbles per call.
+// 
+// Expected URL parameters:
+//   - id (int): ID of the user
+// 
+// Optional query parameters:
+//   - after-quibble-id (int): ID of a specific quibble in which retrieved
+//         quibbles will be after it
+//   - count (int): Number of quibbles to retrieve (capped to 20 quibbles)
+// 
+// Return JSON structure:
+// {
+//     quibbles: [
+//         {
+//             id:           (BigInt string) ID of the quibble,
+//             discussion:   (string) Title of the quibble's discussion,
+//             discussionId: (int) ID of the quibble's discussion,
+//             timestamp:    (number) Time the quibble was posted in UNIX time,
+//             content:      (string | null) Text content of the quibble,
+//             ~condemns:    (int) Count of the number of condemns,
+//             ~condemned:   (bool, true) Indicates if the user has
+//                               condemned the quibble
+//         },
+//         . . . (min 0, max 20)
+//     ]
+// }
+// The condemns and condemned attributes are optional, meaning they may or may
+// not be provided for a quibble. If the condemns attribute is not provided,
+// assume that the quibble has no condemn count. The condemned attribute will
+// only be present if the user has condemned the quibble, and the attribute will
+// always be set to the value true.
+// 
+// The quibbles array is sorted by quibble ID, descending.
+//
+// Quibbles may be deleted by the user or by moderators. Deleted quibbles will
+// have their content attribute set to null.
+app.get('/user/:id/quibbles', jwtVerifySoft, async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: user.getQuibbles,
+        routeName: 'GET /user/:id/quibbles',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // POST /auth/login route
 // 
 // Logs-in a user to an account.
