@@ -194,13 +194,6 @@ app.get('/user/:id/statistics', async (req, res, next) => {
 // 
 // The returned discussions array main contain 0 to 5 entries, depending on the
 // number of discussions the user has interacted with.
-// 
-// If no user with the specified ID is found, an error code and message is
-// returned with the following structure:
-// {
-//     error:   (string) Error code
-//     message: (string) Descriptive error message
-// }
 app.get('/user/:id/top-discussions', async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: user.getTopDiscussions,
