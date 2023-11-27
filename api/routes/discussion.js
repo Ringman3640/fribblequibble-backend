@@ -840,7 +840,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
     if (afterQuibbleId){
         sqlArgList.push(+afterQuibbleId);
     }
-    if (!retrieveCount || retrieveCount > process.env.QUIBBLE_MAX_GET) {
+    if (!retrieveCount || +retrieveCount > process.env.QUIBBLE_MAX_GET) {
         sqlArgList.push(+process.env.QUIBBLE_MAX_GET);
     }
     else {
