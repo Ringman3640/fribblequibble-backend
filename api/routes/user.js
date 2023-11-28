@@ -457,7 +457,7 @@ exports.getQuibbles = new RouteResolver(async (req, res) => {
             discussionId: quibble.discussion_id,
             timestamp: quibble.timestamp,
             content: quibble.content,
-            condemn_count: (quibble.condemn_count > 0n) ? Number(quibble.condemn_count) : undefined,
+            condemns: (quibble.condemn_count > 0n) ? Number(quibble.condemn_count) : undefined,
             condemned: quibble.condemned || undefined
         });
     }
