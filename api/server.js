@@ -20,9 +20,6 @@ const jwt = require('jsonwebtoken');
 // cookie-parser
 const cookieParser = require('cookie-parser');
 
-// cors
-const cors = require('cors');
-
 // util
 const RouteError = require('./util/routeerror.js');
 const tokenEdit = require('./util/tokenedit.js');
@@ -44,11 +41,7 @@ BigInt.prototype.toJSON = function () {
 
 app.use(
     cookieParser(),
-    express.json(),
-    cors({
-        origin: process.env.CORS_FRONTEND_URL,
-        credentials: true
-    })
+    express.json()
 );
 app.listen(process.env.API_PORT, () => {
     console.log('API server is running.');
