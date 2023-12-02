@@ -32,7 +32,7 @@ CREATE TABLE discussion (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	title VARCHAR(100) NOT NULL,
 	description VARCHAR(300),
-    conditions TEXT,
+    page_content TEXT,
 	date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     topic_id INT NOT NULL,
 
@@ -154,7 +154,7 @@ CREATE TABLE condemning_user (
 Changes:
 	~ discussion:title VARCHAR(400) -> VARCHAR(100)
     + discussion:description
-    + discussion:conditions
+    + discussion:page_content
     + choice:id
     + choice:INDEX(discussion_id)
     - choice:pk_choice

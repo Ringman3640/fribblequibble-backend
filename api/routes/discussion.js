@@ -22,7 +22,7 @@ const RouteResolver = require('../util/routeresolver.js');
 // 
 // Optional body parameters:
 //   - description (string): Description of the new discussion
-//   - conditions (string array): Condition items of the new discussion
+//   - page-content (string): Content of the discussion page as markdown syntax
 exports.addDiscussion = new RouteResolver(async (req, res) => {
     if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
@@ -34,7 +34,7 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
     const title = req.body['title'];
     const topicId = req.body['topic-id'];
     const description = req.body['description'];
-    const conditions = req.body['conditions'];
+    const pageContent = req.body['page-content'];
     if (!title) {
         throw new RouteError(
             400,
@@ -47,26 +47,26 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
             'NO_TOPIC_ID',
             'No topic ID was provided in the body request');
     }
-    if (conditions && !Array.isArray(conditions)) {
+    if (pageContent && typeof pageContent !== 'string') {
         throw new RouteError(
             400,
-            'INVALID_CONDITIONS',
-            'The provided conditions value must be an array');
+            'INVALID_PAGE_CONTENT',
+            'The provided page content value must be a string');
     }
 
     const sqlStatement = `
         INSERT INTO discussion (
             ${description ? 'description,' : ''} 
-            ${conditions ? 'conditions,' : ''} 
+            ${pageContent ? 'page_content,' : ''} 
             title, topic_id)
         VALUES (
             ${description ? '?,' : ''} 
-            ${conditions ? '?,' : ''} 
+            ${pageContent ? '?,' : ''} 
             ?, ?);
     `;
     let sqlArgList = [];
     description && sqlArgList.push(description);
-    conditions && sqlArgList.push(JSON.stringify(conditions));
+    pageContent && sqlArgList.push(pageContent);
     sqlArgList.push(title, topicId);
 
     await res.locals.conn.query(sqlStatement, sqlArgList);
@@ -284,7 +284,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
 //     topic:       (string) Name of the discussion topic,
 //     topicId:     (int) ID of the topic,
 //     ~description (string) Description of the discussion,
-//     ~conditions  (string array) Array of condition strings,
+//     ~pageContent (string) Page content markdown string,
 //     choices: [
 //         {
 //             id:      (int): ID of the choice,
@@ -323,7 +323,7 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
             topic_id, 
             topic_name, 
             description, 
-            conditions
+            page_content
         FROM discussion
         JOIN topic ON (discussion.topic_id = topic.id)
         WHERE discussion.id = ?;
@@ -339,27 +339,15 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
         WHERE discussion_id = ?;
     `, [discussionId]);
 
-    let conditionsArray;
-    if (discussionInfo[0].conditions) {
-        try {
-            conditionsArray = JSON.parse(discussionInfo[0].conditions);
-        } catch (err) {
-            delete resJSON['conditions'];
-            console.error('GET /discussion/:id error');
-            console.error(`Failed to parse conditions string from discussion ${discussionId}`);
-        }
-    }
-
     const resJSON = {
         title: discussionInfo[0].title,
         timestamp: discussionInfo[0].timestamp,
         topicId: discussionInfo[0].topic_id,
         topic: discussionInfo[0].topic_name,
         description: discussionInfo[0].description || undefined,
-        conditions: conditionsArray || undefined,
+        pageContent: discussionInfo[0].page_content || undefined,
         choices: []
     };
-    
     for (const choice of choiceInfo) {
         resJSON['choices'].push({
             id: choice.id,

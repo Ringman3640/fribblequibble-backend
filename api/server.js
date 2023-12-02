@@ -385,7 +385,7 @@ app.post('/tag', jwtVerifyStrict, async (req, res, next) => {
 // 
 // Optional body parameters:
 //   - description (string): Description of the new discussion
-//   - conditions (string array): Condition items of the new discussion
+//   - page_content (string): Content of the discussion page as markdown syntax
 app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addDiscussion,
@@ -469,7 +469,7 @@ app.get('/discussions', async (req, res, next) => {
 //     topic:       (string) Name of the discussion topic,
 //     topicId:     (int) ID of the topic,
 //     ~description (string) Description of the discussion,
-//     ~conditions  (string array) Array of condition strings,
+//     ~pageContent (string) Page content markdown string,
 //     choices: [
 //         {
 //             id:      (int): ID of the choice,
