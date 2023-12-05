@@ -1,8 +1,7 @@
-DROP DATABASE IF EXISTS fribblequibble_db;
-CREATE DATABASE fribblequibble_db;
+CREATE DATABASE IF NOT EXISTS fribblequibble_db;
 USE fribblequibble_db;
 
-CREATE TABLE tag (
+CREATE TABLE IF NOT EXISTS tag (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	tag_name VARCHAR(50) NOT NULL,
 
@@ -10,7 +9,7 @@ CREATE TABLE tag (
     UNIQUE(tag_name)
 );
 
-CREATE TABLE topic (
+CREATE TABLE IF NOT EXISTS topic (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	topic_name VARCHAR(50) NOT NULL,
 
@@ -18,7 +17,7 @@ CREATE TABLE topic (
     UNIQUE(topic_name)
 );
 
-CREATE TABLE access (
+CREATE TABLE IF NOT EXISTS access (
     access_level INT PRIMARY KEY,
 	title VARCHAR(50) NOT NULL,
 
@@ -28,7 +27,7 @@ CREATE TABLE access (
 INSERT INTO access
 VALUES (1, 'User'), (2, 'Moderator'), (3, 'Admin'), (4, 'Developer');
 
-CREATE TABLE discussion (
+CREATE TABLE IF NOT EXISTS discussion (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	title VARCHAR(100) NOT NULL,
 	description VARCHAR(300),
@@ -46,7 +45,7 @@ CREATE TABLE discussion (
     UNIQUE(title)
 );
 
-CREATE TABLE choice (
+CREATE TABLE IF NOT EXISTS choice (
     id INT PRIMARY KEY AUTO_INCREMENT,
     discussion_id INT NOT NULL,
     choice_name VARCHAR(50) NOT NULL,
@@ -62,7 +61,7 @@ CREATE TABLE choice (
     UNIQUE(discussion_id, choice_name)
 );
 
-CREATE TABLE discussion_tag (
+CREATE TABLE IF NOT EXISTS discussion_tag (
     discussion_id INT NOT NULL,
     tag_id INT NOT NULL,
 
@@ -77,7 +76,7 @@ CREATE TABLE discussion_tag (
         ON UPDATE CASCADE
 );
 
-CREATE TABLE `user` (
+CREATE TABLE IF NOT EXISTS `user` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(30) NOT NULL,
     password_hash BINARY(60) NOT NULL,
@@ -93,7 +92,7 @@ CREATE TABLE `user` (
     INDEX(access_level)
 );
 
-CREATE TABLE user_choice (
+CREATE TABLE IF NOT EXISTS user_choice (
     choice_id INT NOT NULL,
     user_id INT NOT NULL,
     discussion_id INT NOT NULL,
@@ -115,7 +114,7 @@ CREATE TABLE user_choice (
     UNIQUE(user_id, discussion_id)
 );
 
-CREATE TABLE quibble (
+CREATE TABLE IF NOT EXISTS quibble (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     discussion_id INT NOT NULL,
     author_id INT,
@@ -136,7 +135,7 @@ CREATE TABLE quibble (
     INDEX(date_posted)
 );
 
-CREATE TABLE condemning_user (
+CREATE TABLE IF NOT EXISTS condemning_user (
     user_id INT NOT NULL,
     quibble_id BIGINT NOT NULL,
     CONSTRAINT pk_condemning_user PRIMARY KEY (user_id, quibble_id),
