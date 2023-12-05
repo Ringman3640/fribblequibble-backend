@@ -4,10 +4,6 @@
 
 'use strict'
 
-// dotenv
-const dotenv = require('dotenv');
-dotenv.config();
-
 // MariaDB
 const db = require('mariadb');
 const dbPool = db.createPool({

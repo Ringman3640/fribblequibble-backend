@@ -6,10 +6,6 @@
 
 'use strict'
 
-// dotenv
-const dotenv = require('dotenv');
-dotenv.config();
-
 // Express
 const express = require('express');
 const app = express();

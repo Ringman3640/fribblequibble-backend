@@ -19,6 +19,7 @@ services:
             context: .
             dockerfile: api.Dockerfile
         restart: always
+        env_file: ./api/.env
         ports:
             - '8080:8080'
         depends_on:

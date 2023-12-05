@@ -7,10 +7,6 @@
 // bcrypt
 const bcrypt = require('bcryptjs');
 
-// dotenv
-const dotenv = require('dotenv');
-dotenv.config();
-
 // util
 const RouteError = require('../util/routeerror.js')
 const RouteResolver = require('../util/routeresolver.js');

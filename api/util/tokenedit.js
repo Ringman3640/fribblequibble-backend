@@ -7,10 +7,6 @@
 // jsonwebtoken
 const jwt = require('jsonwebtoken');
 
-// dotenv
-const dotenv = require('dotenv');
-dotenv.config();
-
 // util
 const dbPool = require('./dbpool.js');
 

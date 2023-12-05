@@ -4,10 +4,6 @@
 
 'use strict'
 
-// dotenv
-const dotenv = require('dotenv');
-dotenv.config();
-
 // routeerror.js
 const RouteError = require('./routeerror.js');
 
