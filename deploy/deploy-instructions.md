@@ -4,9 +4,7 @@ This document provides instructions to deploy the FribbleQuibble backend server 
 
 ## Prerequisites
 
-It is assumed that a VPS service has been obtained to publish the backend server. The following dependencies must be installed on the VPS:
-
-- Docker
+It is assumed that a VPS service has been obtained to publish the backend server. The VPS must have Docker and Certbox installed with an SSL certificate generated. Find instructions on how to install Certbot and its dependencies [here](https://certbot.eff.org/).
 
 ## Update ENV Values
 
