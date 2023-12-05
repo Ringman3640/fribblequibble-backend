@@ -3,11 +3,11 @@ services:
     mariadb:
         image: mariadb:latest
         restart: always
-        env_file: mariadb.env
+        env_file: ./mariadb/mariadb.env
         ports:
             - '3306:3306'
         volumes:
-            - ./fribblequibble_db.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./mariadb/fribblequibble_db.sql:/docker-entrypoint-initdb.d/init.sql
             - databasedata:/var/lib/mysql
     api:
         build:
@@ -24,7 +24,7 @@ services:
         ports:
             - '80:80'
         volumes:
-            - ./nginx.conf:/etc/nginx/conf.d/default.conf
+            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - api
 
