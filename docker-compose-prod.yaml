@@ -16,7 +16,6 @@ services:
         restart: always
         env_file:
             - ./api/api.env
-            - ./api/api-prod.env
         ports:
             - '127.0.0.1:8080:8080'
         depends_on:
