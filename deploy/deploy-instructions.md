@@ -36,6 +36,7 @@ To execute the transferred backend API, it must first be extracted and launched 
 1. Login to the remote VPS through ssh
 2. Navigate to the backend archive location
 3. Run the following commands:
+   - sudo rm -rf backend
    - tar -xzf backend.tar.gz --one-top-level
    - cd backend
    - docker compose -f docker-compose-prod.yaml up --build --force-recreate --no-deps -d
