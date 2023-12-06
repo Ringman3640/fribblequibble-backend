@@ -25,7 +25,7 @@ The backend archive needs to be transferred to the remote VPS. This will be acco
 
 1. Open an ssh and scp-capable terminal in the root backend folder
 2. Run the following commands in the terminal:
-   - scp ./deploy/backend.tar.gz username@host:~/backend.tar.gz
+   - scp ./deploy/backend.tar.gz username@backend.fribblequibble.com:~/backend.tar.gz
 
 Replace usename and host in the command with the corresponding username and host from the VPS. Host should be an IPv4 address.
 
