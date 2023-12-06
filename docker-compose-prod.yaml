@@ -5,7 +5,7 @@ services:
         restart: always
         env_file: ./mariadb/mariadb.env
         ports:
-            - '3306:3306'
+            - '127.0.0.1:3306:3306'
         volumes:
             - ./mariadb/fribblequibble_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
             - databasedata:/var/lib/mysql:rw
@@ -18,7 +18,7 @@ services:
             - ./api/api.env
             - ./api/api-prod.env
         ports:
-            - '8080:8080'
+            - '127.0.0.1:8080:8080'
         depends_on:
             - mariadb
     nginx:
