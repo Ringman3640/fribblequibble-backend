@@ -38,7 +38,7 @@ To execute the transferred backend API, it must first be extracted and launched 
 3. Run the following commands:
    - tar -xzf backend.tar.gz --one-top-level
    - cd backend
-   - docker compose -f docker-compose-prod.yaml up -d
+   - docker compose -f docker-compose-prod.yaml up --build --force-recreate --no-deps -d
 4. Pray
 
 ### Update Certbot Renewal
