@@ -47,6 +47,6 @@ To execute the transferred backend API, it must first be extracted and launched 
 When first generating SSL certificated through Certbot, the --standalone flag is used. This works by creating a temporary webserver. However, the backend server already has the Nginx webserver running, which will prevent Certbot from creating its own webserver. This will cause the renewal process to fail. The process needs to be updated to use a webroot instead.
 
 1. Run the following command:
-   - sudo certbot renew --webroot --webroot-path /usr/share/nginx/html -d backend.fribblequibble.com --dry-run
+   - sudo certbot certonly --webroot --webroot-path /usr/share/nginx/html -d backend.fribblequibble.com
 
-This command tests the ability for the server to generate an SSL certificate. On success, the certificate renewal method will be updated for webroot.
+This command will regenerate the SSL certificate using webroot through the Nginx server. On success, the certificate renewal method will be updated for webroot.
