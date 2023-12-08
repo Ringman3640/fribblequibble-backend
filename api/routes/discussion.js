@@ -43,6 +43,12 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
             'NO_TOPIC_ID',
             'No topic ID was provided in the body request');
     }
+    if (!Number.isInteger(topicId)) {
+        throw new RouteError(
+            400,
+            'INVALID_TOPIC_ID',
+            'The provided topic ID value must be an int');
+    }
     if (pageContent && typeof pageContent !== 'string') {
         throw new RouteError(
             400,
