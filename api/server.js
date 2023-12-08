@@ -35,6 +35,13 @@ BigInt.prototype.toJSON = function () {
     return this.toString();
 }
 
+// Force close server on SIGTERM for faster Docker container restarts
+// Currently not graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received');
+    process.exit();
+});
+
 app.use(
     cookieParser(),
     express.json()
