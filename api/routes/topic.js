@@ -14,6 +14,11 @@ const RouteResolver = require('../util/routeresolver.js');
 // 
 // Expected body parameters:
 //   - name (string): Name of the new topic
+// 
+// On success, the following JSON structure is returned:
+// {
+//     topicId: (int) ID of the created topic
+// }
 exports.addTopic = new RouteResolver(async (req, res) => {
     if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
@@ -30,13 +35,23 @@ exports.addTopic = new RouteResolver(async (req, res) => {
             'No topic name was provided in the body request');
     }
 
+    await res.locals.conn.beginTransaction();
     await res.locals.conn.query(`
         INSERT INTO topic (topic_name)
         VALUES (?);
     `, [topicName]);
+    const dbRes = await res.locals.conn.query(`
+        SELECT LAST_INSERT_ID() AS id;
+    `);
+    try {
+        await res.locals.conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    }
 
     res.status(201).send({
-        message: 'Successfully added topic'
+        topicId: dbRes[0].id
     });
 },
 {

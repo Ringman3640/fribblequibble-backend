@@ -321,6 +321,11 @@ app.get('/auth/login/test', jwtVerifyStrict, async (req, res, next) => {
 // 
 // Expected body parameters:
 //   - name (string): Name of the new topic
+// 
+// On success, the following JSON structure is returned:
+// {
+//     topicId: (int) ID of the created topic
+// }
 app.post('/topic', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: topic.addTopic,
