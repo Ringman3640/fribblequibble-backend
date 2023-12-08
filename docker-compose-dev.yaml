@@ -12,7 +12,7 @@ services:
     api:
         build:
             context: .
-            dockerfile: ./api/api.Dockerfile
+            dockerfile: ./api/api-dev.Dockerfile
         restart: always
         env_file:
             - ./api/api.env
@@ -22,7 +22,7 @@ services:
             - ./api/:/api/src/
         depends_on:
             - mariadb
-        entrypoint: ["node", "/api/src/server.js"]
+        entrypoint: ["nodemon", "--legacy-watch", "/api/src/server.js"]
     nginx:
         image: nginx:latest
         restart: always

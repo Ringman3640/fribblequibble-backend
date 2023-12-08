@@ -12,7 +12,7 @@ services:
     api:
         build:
             context: .
-            dockerfile: ./api/api.Dockerfile
+            dockerfile: ./api/api-prod.Dockerfile
         restart: always
         env_file:
             - ./api/api.env
