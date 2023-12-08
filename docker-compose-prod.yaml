@@ -18,8 +18,11 @@ services:
             - ./api/api.env
         ports:
             - '127.0.0.1:8080:8080'
+        volumes:
+            - ./api/:/api/src/
         depends_on:
             - mariadb
+        entrypoint: ["node", "/api/src/server.js"]
     nginx:
         image: nginx:latest
         restart: always
