@@ -97,3 +97,38 @@ exports.getTopic = new RouteResolver(async (req, res) => {
         topicName: dbRes[0].topic_name
     });
 });
+
+// GET /topics route
+// 
+// Gets a list of all topics.
+// 
+// Return JSON structure:
+// {
+//     topics: [
+//         {
+//             id:      (int) ID of the topic
+//             name:    (string) Name of the topic
+//         },
+//         . . .
+//     ]
+// }
+exports.getTopics = new RouteResolver(async(req, res) => {
+    const dbRes = await res.locals.conn.query(`
+        SELECT
+            id,
+            topic_name
+        FROM topic;
+    `);
+
+    const resJSON = {
+        topics: []
+    };
+    for (const topic of dbRes) {
+        resJSON.topics.push({
+            id: topic.id,
+            name: topic.topic_name
+        });
+    }
+
+    res.status(200).send(resJSON);
+});

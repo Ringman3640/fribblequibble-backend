@@ -353,7 +353,32 @@ app.post('/topic', jwtVerifyStrict, async (req, res, next) => {
 app.get('/topic/:id', async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: topic.getTopic,
-        routeName: 'POST /topic',
+        routeName: 'GET /topic/:id',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
+// GET /topics route
+// 
+// Gets a list of all topics.
+// 
+// Return JSON structure:
+// {
+//     topics: [
+//         {
+//             id:      (int) ID of the topic
+//             name:    (string) Name of the topic
+//         },
+//         . . .
+//     ]
+// }
+app.get('/topics', async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: topic.getTopics,
+        routeName: 'GET /topics',
         req: req,
         res: res,
         next: next,
