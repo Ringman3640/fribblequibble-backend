@@ -418,7 +418,7 @@ app.post('/tag', jwtVerifyStrict, async (req, res, next) => {
 // 
 // Optional body parameters:
 //   - description (string): Description of the new discussion
-//   - page_content (string): Content of the discussion page as markdown syntax
+//   - page-content (string): Content of the discussion page as markdown syntax
 app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addDiscussion,
