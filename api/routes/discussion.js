@@ -88,8 +88,6 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
         throw err;
     }
 
-    console.log(dbRes);
-
     res.status(201).send({
         discussionId: Number(dbRes[0].id)
     });
