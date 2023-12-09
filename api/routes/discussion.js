@@ -19,6 +19,11 @@ const RouteResolver = require('../util/routeresolver.js');
 // Optional body parameters:
 //   - description (string): Description of the new discussion
 //   - page-content (string): Content of the discussion page as markdown syntax
+// 
+// On success, the following JSON structure is returned:
+// {
+//     discussionId: (int) ID of the created discussion
+// }
 exports.addDiscussion = new RouteResolver(async (req, res) => {
     if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
@@ -71,10 +76,22 @@ exports.addDiscussion = new RouteResolver(async (req, res) => {
     pageContent && sqlArgList.push(pageContent);
     sqlArgList.push(title, topicId);
 
+    await res.locals.conn.beginTransaction();
     await res.locals.conn.query(sqlStatement, sqlArgList);
+    const dbRes = await res.locals.conn.query(`
+        SELECT LAST_INSERT_ID() AS id;
+    `);
+    try {
+        await res.locals.conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    }
+
+    console.log(dbRes);
 
     res.status(201).send({
-        message: `Successfully added discussion ${title}`
+        discussionId: Number(dbRes[0].id)
     });
 },
 {
