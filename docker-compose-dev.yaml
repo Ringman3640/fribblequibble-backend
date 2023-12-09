@@ -22,7 +22,7 @@ services:
             - ./api/:/api/src/
         depends_on:
             - mariadb
-        entrypoint: ["nodemon", "--watch", "/api/src", "-e", "js,env", "--legacy-watch", "/api/src/server.js"]
+        entrypoint: ["node", "/api/src/server.js"]
     nginx:
         image: nginx:latest
         restart: always

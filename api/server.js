@@ -419,6 +419,11 @@ app.post('/tag', jwtVerifyStrict, async (req, res, next) => {
 // Optional body parameters:
 //   - description (string): Description of the new discussion
 //   - page-content (string): Content of the discussion page as markdown syntax
+// 
+// On success, the following JSON structure is returned:
+// {
+//     discussionId: (int) ID of the created discussion
+// }
 app.post('/discussion', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addDiscussion,
