@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS choice (
     id INT PRIMARY KEY AUTO_INCREMENT,
     discussion_id INT NOT NULL,
     choice_name VARCHAR(50) NOT NULL,
-    color CHAR(7),
 
     CONSTRAINT fk_choice_discussion_id FOREIGN KEY (discussion_id)
         REFERENCES discussion(id)
@@ -157,7 +156,7 @@ Changes:
     + choice:id
     + choice:INDEX(discussion_id)
     - choice:pk_choice
-    - choice:color NOT NULL
+    - choice:color
     + user:date_joined
     + user_choice:choice_id
     - user_choice:choice_name
