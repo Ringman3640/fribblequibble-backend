@@ -511,8 +511,7 @@ app.get('/discussions', async (req, res, next) => {
 //     choices: [
 //         {
 //             id:      (int): ID of the choice,
-//             name:    (string) Name of the choice,
-//             ~color:  (string) Hex color of the choice (#FFFFFF format)
+//             name:    (string) Name of the choice
 //         },
 //         . . .
 //     ]
@@ -600,9 +599,6 @@ app.get('/discussion/:id/tags', async (req, res, next) => {
 // 
 // Expected body parameters:
 //   - choice-name (string): Name of the choice
-// 
-// Optional body parameters:
-//   - choice-color (string): Hex color of the choice (#FFFFFF format)
 app.post('/discussion/:id/choice', jwtVerifyStrict, async (req, res, next) => {
     await resolveRouteHandler({
         routeResolver: discussion.addDiscussionChoice,
@@ -633,15 +629,13 @@ app.post('/discussion/choice/:id/user', jwtVerifyStrict, async (req, res, next) 
 
 // GET /discussion/:id/user-choice route
 // 
-// Gets the user's choice from a specific discussion. Includes the choice ID,
-// choice name, and optionally a choice color if present.
-// and choice color.
+// Gets the user's choice from a specific discussion. Includes the choice ID and
+// choice name.
 // 
 // Return JSON structure:
 // {
-//     choiceId:        (int) ID of the choice the user selected
+//     choiceId:        (int) ID of the choice the user selected,
 //     choiceName:      (string) Name of the choice the user selected
-//     ~choiceColor:    (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned

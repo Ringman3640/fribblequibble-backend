@@ -305,8 +305,7 @@ exports.getDiscussions = new RouteResolver(async (req, res) => {
 //     choices: [
 //         {
 //             id:      (int): ID of the choice,
-//             name:    (string) Name of the choice,
-//             ~color:  (string) Hex color of the choice (#FFFFFF format)
+//             name:    (string) Name of the choice
 //         },
 //         . . .
 //     ]
@@ -352,7 +351,10 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
             'The provided discussion ID was not found');
     }
     const choiceInfo = await res.locals.conn.query(`
-        SELECT id, choice_name, color FROM choice
+        SELECT
+            id,
+            choice_name
+        FROM choice
         WHERE discussion_id = ?;
     `, [discussionId]);
 
@@ -368,8 +370,7 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
     for (const choice of choiceInfo) {
         resJSON['choices'].push({
             id: choice.id,
-            name: choice.choice_name,
-            color: choice.color || undefined
+            name: choice.choice_name
         });
     }
 
@@ -501,9 +502,6 @@ exports.getDiscussionTags = new RouteResolver(async (req, res) => {
 // 
 // Expected body parameters:
 //   - choice-name (string): Name of the choice
-// 
-// Optional body parameters:
-//   - choice-color (string): Hex color of the choice (#FFFFFF format)
 exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
     if (res.locals.userInfo.access_level < 3) {
         throw new RouteError(
@@ -514,7 +512,6 @@ exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
 
     const discussionId = req.params['id'];
     const choiceName = req.body['choice-name'];
-    const choiceColor = req.body['choice-color'];
     if (!discussionId) {
         throw new RouteError(
             400,'NO_DISCUSSION_ID',
@@ -525,25 +522,11 @@ exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
             400,'NO_CHOICE_NAME',
             'No choice name was provided in the body request');
     }
-    if (choiceColor && (choiceColor.length != 7 || choiceColor.charAt(0) != '#')) {
-        throw new RouteError(
-            400,
-            'INVALID_CHOICE_COLOR',
-            'The choice color must be in the hex format #FFFFFF');
-    }
 
-    if (choiceColor) {
-        await res.locals.conn.query(`
-            INSERT INTO choice (discussion_id, choice_name, color)
-            VALUES (?, ?, ?);
-        `, [discussionId, choiceName, choiceColor]);
-    }
-    else {
-        await res.locals.conn.query(`
-            INSERT INTO choice (discussion_id, choice_name)
-            VALUES (?, ?);
-        `, [discussionId, choiceName]);
-    }
+    await res.locals.conn.query(`
+        INSERT INTO choice (discussion_id, choice_name)
+        VALUES (?, ?);
+    `, [discussionId, choiceName]);
 
     res.status(201).send({
         message: 'Successfully added choice'
@@ -616,15 +599,13 @@ exports.addUserChoice = new RouteResolver(async (req, res) => {
 
 // GET /discussion/:id/user-choice route
 // 
-// Gets the user's choice from a specific discussion. Includes the choice ID,
-// choice name, and optionally a choice color if present.
-// and choice color.
+// Gets the user's choice from a specific discussion. Includes the choice ID and
+// choice name.
 // 
 // Return JSON structure:
 // {
-//     choiceId:        (int) ID of the choice the user selected
+//     choiceId:        (int) ID of the choice the user selected,
 //     choiceName:      (string) Name of the choice the user selected
-//     ~choiceColor:    (string) Hex color of the choice (#FFFFFF format)
 // }
 // 
 // If the user has not selected a choice, a 400 HTTP response will be returned
@@ -648,7 +629,10 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
     }
 
     const dbRes = await res.locals.conn.query(`
-        SELECT choice_id, choice_name, color FROM user_choice
+        SELECT
+            choice_id,
+            choice_name
+        FROM user_choice
         JOIN choice ON (choice_id = id)
         WHERE user_choice.discussion_id = ?
         AND user_id = ?;
@@ -661,8 +645,7 @@ exports.getUserChoice = new RouteResolver(async (req, res) => {
     }
     const resJSON = {
         choiceId: dbRes[0].choice_id,
-        choiceName: dbRes[0].choice_name,
-        choiceColor: dbRes[0].color || undefined
+        choiceName: dbRes[0].choice_name
     };
 
     res.status(200).send(resJSON);
