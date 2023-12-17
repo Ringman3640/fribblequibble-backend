@@ -286,6 +286,32 @@ app.post('/auth/logout', async (req, res, next) => {
     });
 });
 
+// GET /auth/info route
+// 
+// Gets information about a logged-in requester. Includes the user's ID,
+// username, and access level.
+// 
+// Return JSON structure:
+// {
+//     id:           (int) ID of the requesting user,
+//     username:     (string) Username of the requesting user,
+//     accessLevel:  (int) Access level number of the requesting user,
+//     expTimestamp: (int) Date when the info becomes invalid in UNIX seconds
+// }
+// 
+// If the user is not logged-in, a 400-level error response is returned with
+// a corresponding error code and error message.
+app.get('/auth/info', jwtVerifySoft, async (req, res, next) => {
+    await resolveRouteHandler({
+        routeResolver: auth.getInfo,
+        routeName: 'GET /auth/info',
+        req: req,
+        res: res,
+        next: next,
+        createConn: true
+    });
+});
+
 // POST /auth/renew-access-token
 // 
 // Renews a user's access token using their refresh token.

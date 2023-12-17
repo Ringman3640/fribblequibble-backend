@@ -73,6 +73,38 @@ exports.logout = new RouteResolver((req, res) => {
     res.end();
 });
 
+// GET /auth/info route
+// 
+// Gets information about a logged-in requester. Includes the user's ID,
+// username, and access level.
+// 
+// Return JSON structure:
+// {
+//     id:           (int) ID of the requesting user,
+//     username:     (string) Username of the requesting user,
+//     accessLevel:  (int) Access level number of the requesting user,
+//     expTimestamp: (int) Date when the info becomes invalid in UNIX seconds
+// }
+// 
+// If the user is not logged-in, a 400-level error response is returned with
+// a corresponding error code and error message.
+exports.getInfo = new RouteResolver((req, res) => {
+    const userInfo = res.locals.userInfo;
+    if (!userInfo) {
+        throw new RouteError(
+            401,
+            'NO_USER',
+            'The requesting user is not logged-in');
+    }
+    
+    res.status(200).send({
+        id: userInfo.id,
+        username: userInfo.username,
+        accessLevel: userInfo.access_level,
+        expTimestamp: userInfo.exp
+    });
+});
+
 // POST /auth/renew-access-token
 // 
 // Renews a user's access token using their refresh token.
