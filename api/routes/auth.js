@@ -91,6 +91,8 @@ exports.logout = new RouteResolver((req, res) => {
 exports.getInfo = new RouteResolver((req, res) => {
     const userInfo = res.locals.userInfo;
     if (!userInfo) {
+        res.clearCookie('refresh_token');
+        res.clearCookie('access_token');
         throw new RouteError(
             401,
             'NO_USER',
