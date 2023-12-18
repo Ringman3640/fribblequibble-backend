@@ -355,7 +355,8 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
             id,
             choice_name
         FROM choice
-        WHERE discussion_id = ?;
+        WHERE discussion_id = ?
+        ORDER BY id;
     `, [discussionId]);
 
     const resJSON = {
