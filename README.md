@@ -26,3 +26,12 @@ Logical Model:
 ![Logical model of the FribbleQuibble backend database](./readme-src/logical-model.png)
 
 The physical model can be found [here](https://github.com/Ringman3640/fribblequibble-backend/blob/main/mariadb/fribblequibble_db.sql).
+
+### Deployment
+Deploying the backend requires ENV files that are not provided within this repository. Without these files, the backend server will fail to start. Search for template environment files (with the `.env.template` file type), populate any variables marked 'CONFIDENTIAL', and remove the `.template` postfix from their filename.
+
+A development instance can be deployed by running the following command in the local repository folder:
+
+`docker compose -f docker-compose-dev.yaml up -d`
+
+Instructions for deploying a production instance on a VPS can be found [here](./deploy/deploy-instructions.md).
