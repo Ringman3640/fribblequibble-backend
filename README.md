@@ -25,7 +25,7 @@ Conceptual Model:
 Logical Model:
 ![Logical model of the FribbleQuibble backend database](./readme-src/logical-model.png)
 
-The physical model can be found [here](https://github.com/Ringman3640/fribblequibble-backend/blob/main/mariadb/fribblequibble_db.sql).
+The physical model can be found [here](./mariadb/fribblequibble_db.sql).
 
 ### Deployment
 Deploying the backend requires ENV files that are not provided within this repository. Without these files, the backend server will fail to start. Search for template environment files (with the `.env.template` file type), populate any variables marked 'CONFIDENTIAL', and remove the `.template` postfix from their filename.
