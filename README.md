@@ -16,3 +16,13 @@ The backend responsibilities are implemented using a variety of technologies.
 - [NGINX](https://www.nginx.com/) for reverse proxy and rate limiting
 - [Certbot](https://certbot.eff.org/)+NGINX for HTTPS security
 - [Docker Compose](https://docs.docker.com/compose/) for deployment
+
+### Database Structure
+
+Conceptual Model:
+![Conceptual model of the FribbleQuibble backend database](./readme-src/conceptual-model.png)
+
+Logical Model:
+![Logical model of the FribbleQuibble backend database](./readme-src/logical-model.png)
+
+The physical model can be found [here](https://github.com/Ringman3640/fribblequibble-backend/blob/main/mariadb/fribblequibble_db.sql).
