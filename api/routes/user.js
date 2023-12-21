@@ -49,12 +49,9 @@ exports.addUser = new RouteResolver(async (req, res) => {
 // Expected URL parameters:
 //   - id (int): ID of the user to remove
 exports.removeUser = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < process.env.ACCESS_LEVEL_ADMIN) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED',
-            'Only admin-level or above users can remove users');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const userId = req.params['id'];
     validation.validateUserId(userId);
@@ -109,18 +106,10 @@ exports.changeUsername = new RouteResolver(async (req, res) => {
 
     // Authorization for changing other users' usernames
     if (userId != res.locals.userInfo.id) {
-        if (res.locals.userInfo.access_level < process.env.ACCESS_LEVEL_ADMIN) {
-            throw new RouteError(
-                403,
-                'UNAUTHORIZED',
-                'Moderator-level users and below can only change their own usernames');
-        }
-        if (res.locals.userInfo.access_level <= dbRes[0].access_level) {
-            throw new RouteError(
-                403,
-                'UNAUTHORIZED',
-                'The target user\'s access level must be less than the changing user');
-        }
+        await validation.validateAccessLevel(
+            Math.max(process.env.ACCESS_LEVEL_ADMIN, dbRes[0].access_level + 1),
+            res.locals.userInfo.id,
+            res.locals.conn);
     }
 
     // Apply username change
@@ -154,13 +143,6 @@ exports.changeUsername = new RouteResolver(async (req, res) => {
 // Expected body parameters:
 //   - access-level (int): Access level to apply to the user
 exports.changeAccessLevel = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < process.env.ACCESS_LEVEL_ADMIN) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED',
-            'Only admin-level or above users can update access levels');
-    }
-
     const userId = req.params['id'];
     const accessLevel = req.body['access-level'];
     validation.validateUserId(userId);
@@ -178,12 +160,10 @@ exports.changeAccessLevel = new RouteResolver(async (req, res) => {
             'INVALID_ACCESS_LEVEL',
             'The provided access level value must be an int and must be a valid access value')
     }
-    if (accessLevel > res.locals.userInfo.access_level) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED_ACCESS_LEVEL',
-            'The provided access level cannot exceed the requester\'s access level');
-    }
+    await validation.validateAccessLevel(
+        Math.max(accessLevel, process.env.ACCESS_LEVEL_ADMIN),
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     let dbRes = await res.locals.conn.query(`
         SELECT id FROM user

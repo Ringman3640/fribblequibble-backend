@@ -7,6 +7,7 @@
 // util
 const RouteError = require('../util/routeerror.js')
 const RouteResolver = require('../util/routeresolver.js');
+const validation = require('../util/validation.js');
 
 // POST /discussion route
 // 
@@ -25,12 +26,9 @@ const RouteResolver = require('../util/routeresolver.js');
 //     discussionId: (int) ID of the created discussion
 // }
 exports.addDiscussion = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < 3) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED_ACCESS',
-            'Only admin-level users or above can add discussions');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const title = req.body['title'];
     const topicId = req.body['topic-id'];
@@ -388,12 +386,9 @@ exports.getDiscussion = new RouteResolver(async (req, res) => {
 // Expected body parameters:
 //   - tag-id (int): ID of the tag to add
 exports.addDiscussionTag = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < 3) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED_ACCESS',
-            'Only admin-level users or above can add tags to discussions');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const discussionId = req.params['id'];
     const tagId = req.body['tag-id'];
@@ -504,12 +499,9 @@ exports.getDiscussionTags = new RouteResolver(async (req, res) => {
 // Expected body parameters:
 //   - choice-name (string): Name of the choice
 exports.addDiscussionChoice = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < 3) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED_ACCESS',
-            'Only admin-level users or above can add choices');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const discussionId = req.params['id'];
     const choiceName = req.body['choice-name'];

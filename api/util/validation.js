@@ -87,3 +87,28 @@ exports.validateUserId = (userId) => {
 
     return true;
 }
+
+exports.validateAccessLevel = async (minAccessLevel, userId, conn) => {
+    if (!userId || !minAccessLevel || !conn) {
+        console.error('validateAccessLevel error: userId, minAccessLevel, or conn not provided');
+        throw {};
+    }
+
+    const dbRes = await conn.query(`
+        SELECT
+            access_level
+        FROM user
+        WHERE id = ?;
+    `, [userId]);
+    if (dbRes.length === 0) {
+        console.error(`validateAccessLevel error: Unknown userId ${userId}`);
+        throw {};
+    }
+    
+    if (dbRes[0].access_level < minAccessLevel) {
+        throw new RouteError(
+            403,
+            'UNAUTHORIZED_ACCESS_LEVEL',
+            'The user does not have privileges to this resource');
+    }
+}

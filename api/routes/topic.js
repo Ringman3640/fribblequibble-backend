@@ -7,6 +7,7 @@
 // utils
 const RouteError = require('../util/routeerror.js');
 const RouteResolver = require('../util/routeresolver.js');
+const validation = require('../util/validation.js');
 
 // POST /topic route
 // 
@@ -20,12 +21,9 @@ const RouteResolver = require('../util/routeresolver.js');
 //     topicId: (int) ID of the created topic
 // }
 exports.addTopic = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < 3) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED_ACCESS',
-            'Only admin-level users or above can add topics');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const topicName = req.body['name'];
     if (!topicName) {

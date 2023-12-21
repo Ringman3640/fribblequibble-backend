@@ -7,6 +7,7 @@
 // util
 const RouteError = require('../util/routeerror.js')
 const RouteResolver = require('../util/routeresolver.js');
+const validation = require('../util/validation.js');
 
 // POST /quibble route
 // 
@@ -138,12 +139,9 @@ exports.addCondemningUser = new RouteResolver(async (req, res) => {
 // Expected URL parameters:
 //   - id (BigInt string): ID of the target quibble
 exports.removeQuibble = new RouteResolver(async (req, res) => {
-    if (res.locals.userInfo.access_level < process.env.ACCESS_LEVEL_MODERATOR) {
-        throw new RouteError(
-            403,
-            'UNAUTHORIZED',
-            'Only moderator-level or above users can remove quibbles');
-    }
+    await validation.validateAccessLevel(process.env.ACCESS_LEVEL_ADMIN,
+        res.locals.userInfo.id,
+        res.locals.conn);
 
     const quibbleId = translateQuibbleId(req.params['id']);
     
