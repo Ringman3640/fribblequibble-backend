@@ -116,7 +116,8 @@ app.put('/user/:id/username', jwtVerifyStrict, async (req, res, next) => {
 // 
 // Updates a user's access level. Only accessible by admin-level users. Access
 // levels can only be set if the set level does not exceed the access level of
-// the requesting user.
+// the requesting user. Additionally, users cannot modify the access levels
+// of other users with equal or higher access levels.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the user to update

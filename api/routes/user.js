@@ -135,7 +135,8 @@ exports.changeUsername = new RouteResolver(async (req, res) => {
 // 
 // Updates a user's access level. Only accessible by admin-level users. Access
 // levels can only be set if the set level does not exceed the access level of
-// the requesting user.
+// the requesting user. Additionally, users cannot modify the access levels
+// of other users with equal or higher access levels.
 // 
 // Expected URL parameters:
 //   - id (int): ID of the user to update
@@ -160,13 +161,11 @@ exports.changeAccessLevel = new RouteResolver(async (req, res) => {
             'INVALID_ACCESS_LEVEL',
             'The provided access level value must be an int and must be a valid access value')
     }
-    await validation.validateAccessLevel(
-        Math.max(accessLevel, process.env.ACCESS_LEVEL_ADMIN),
-        res.locals.userInfo.id,
-        res.locals.conn);
 
-    let dbRes = await res.locals.conn.query(`
-        SELECT id FROM user
+    const dbRes = await res.locals.conn.query(`
+        SELECT
+            access_level
+        FROM user
         WHERE id = ?;
     `, [userId]);
     if (dbRes.length == 0) {
@@ -175,6 +174,11 @@ exports.changeAccessLevel = new RouteResolver(async (req, res) => {
             'USER_ID_NOT_FOUND',
             `User with ID ${userId} not found`);
     }
+    await validation.validateAccessLevel(
+        Math.max(accessLevel, process.env.ACCESS_LEVEL_ADMIN, dbRes[0].access_level + 1),
+        res.locals.userInfo.id,
+        res.locals.conn);
+
     await res.locals.conn.query(`
         UPDATE user
         SET access_level = ?
