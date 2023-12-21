@@ -17,7 +17,7 @@ To deploy the backend service to a VPS provider, the backend folder will need to
 1. Open a terminal
 2. Navigate to the root backend folder
 3. Run the following command:
-   - tar --exclude=node_modules --exclude=.git -cz -f ./deploy/backend.tar.gz .
+   - tar --exclude=node_modules --exclude=.git --exclude=./deploy/backend.tar.gz -cz -f ./deploy/backend.tar.gz .
 
 ### Transfer Backend Archive
 
